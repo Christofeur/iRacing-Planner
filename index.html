@@ -52,6 +52,13 @@
 <label>Temps au tour moyen (mm:ss)</label>
 <input type="text" id="lapTime" value="01:45">
 
+<hr>
+
+<h2>Pit</h2>
+
+<label>Temps de pit (secondes)</label>
+<input type="number" id="pitSeconds" value="40">
+
 <br><br>
 
 <button onclick="generatePlan()">📋 Générer le planning</button>
@@ -129,6 +136,8 @@ function generatePlan() {
   const fuelPerLap = Number(document.getElementById("fuelPerLap").value);
   const lapTimeStr = document.getElementById("lapTime").value;
 
+  const pitSeconds = Number(document.getElementById("pitSeconds").value);
+
   if (drivers.length === 0) {
     alert("Ajoute au moins un pilote");
     return;
@@ -150,8 +159,10 @@ function generatePlan() {
   const stintSeconds = lapsPerStint * lapTimeSeconds;
   const stintMinutes = stintSeconds / 60;
 
+  const pitMinutes = pitSeconds / 60;
+
   document.getElementById("stintInfo").innerText =
-    `Relais = ${lapsPerStint} tours ≈ ${Math.round(stintMinutes)} minutes`;
+    `Relais = ${lapsPerStint} tours ≈ ${Math.round(stintMinutes)} min | Pit = ${pitSeconds}s`;
 
   const [startH, startM] = startTimeStr.split(":").map(Number);
   let currentTime = startH * 60 + startM;
@@ -163,6 +174,7 @@ function generatePlan() {
 
   let elapsed = 0;
   let driverIndex = 0;
+  let firstStint = true;
 
   while (elapsed < totalMinutes - 0.01) {
     const driver = drivers[driverIndex];
@@ -170,6 +182,13 @@ function generatePlan() {
 
     for (let r = 0; r < repeats; r++) {
       if (elapsed >= totalMinutes - 0.01) break;
+
+      // Ajouter le temps de pit AVANT le relais (sauf tout premier)
+      if (!firstStint) {
+        currentTime += pitMinutes;
+        elapsed += pitMinutes;
+      }
+      firstStint = false;
 
       const start = currentTime;
       const end = currentTime + stintMinutes;
