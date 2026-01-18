@@ -37,9 +37,10 @@ function generatePlan() {
 
   const raceHours = Number(document.getElementById("raceHours").value);
   const stintMinutes = Number(document.getElementById("stintMinutes").value);
-  const pitMinutes = Number(document.getElementById("pitMinutes").value);
+  const pitSeconds = Number(document.getElementById("pitMinutes").value); // maintenant en secondes
 
   const totalMinutes = raceHours * 60;
+  const pitMinutes = pitSeconds / 60;
 
   // Reset compteurs
   drivers.forEach(d => d.total = 0);
@@ -58,14 +59,14 @@ function generatePlan() {
     const end = Math.min(currentTime + stintMinutes, totalMinutes);
     const duration = end - start;
 
-    addRow(start, end, driver.name, "Drive");
+    addRow(start, end, driver.name);
 
     driver.total += duration;
 
     currentTime = end;
 
+    // On ajoute le temps de pit MAIS on ne l'affiche plus
     if (currentTime < totalMinutes) {
-      addRow(currentTime, currentTime + pitMinutes, "—", "Pit");
       currentTime += pitMinutes;
     }
   }
@@ -73,7 +74,7 @@ function generatePlan() {
   renderDrivers();
 }
 
-function addRow(startMin, endMin, driver, action) {
+function addRow(startMin, endMin, driver) {
   const table = document.getElementById("planTable");
   const tr = document.createElement("tr");
 
@@ -81,7 +82,6 @@ function addRow(startMin, endMin, driver, action) {
     <td>${formatTime(startMin)}</td>
     <td>${formatTime(endMin)}</td>
     <td>${driver}</td>
-    <td>${action}</td>
   `;
 
   table.appendChild(tr);
