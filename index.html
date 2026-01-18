@@ -35,9 +35,28 @@
   <option value="double">Double relais</option>
 </select>
 
+<hr>
+
+<h2>Carburant</h2>
+
+<label>Capacité réservoir (L)</label>
+<input type="number" id="fuelCapacity" value="120">
+
+<br><br>
+
+<label>Consommation par tour (L)</label>
+<input type="number" id="fuelPerLap" value="3.2" step="0.01">
+
+<br><br>
+
+<label>Temps au tour moyen (mm:ss)</label>
+<input type="text" id="lapTime" value="01:45">
+
 <br><br>
 
 <button onclick="generatePlan()">📋 Générer le planning</button>
+
+<p id="stintInfo" style="font-weight:bold;"></p>
 
 <hr>
 
@@ -89,8 +108,12 @@ function renderDrivers() {
   });
 }
 
+function parseTimeToSeconds(t) {
+  const parts = t.split(":").map(Number);
+  return parts[0] * 60 + parts[1];
+}
+
 function formatTime(totalMinutes) {
-  // wrap 24h
   let m = ((totalMinutes % (24 * 60)) + (24 * 60)) % (24 * 60);
   const h = Math.floor(m / 60).toString().padStart(2, "0");
   const min = Math.floor(m % 60).toString().padStart(2, "0");
@@ -102,6 +125,10 @@ function generatePlan() {
   const stintMode = document.getElementById("stintMode").value;
   const startTimeStr = document.getElementById("startTime").value;
 
+  const fuelCapacity = Number(document.getElementById("fuelCapacity").value);
+  const fuelPerLap = Number(document.getElementById("fuelPerLap").value);
+  const lapTimeStr = document.getElementById("lapTime").value;
+
   if (drivers.length === 0) {
     alert("Ajoute au moins un pilote");
     return;
@@ -112,32 +139,40 @@ function generatePlan() {
     return;
   }
 
-  if (raceHours <= 0) {
-    alert("Durée de course invalide");
+  if (raceHours <= 0 || fuelCapacity <= 0 || fuelPerLap <= 0) {
+    alert("Paramètres invalides");
     return;
   }
+
+  const lapTimeSeconds = parseTimeToSeconds(lapTimeStr);
+
+  const lapsPerStint = Math.floor(fuelCapacity / fuelPerLap);
+  const stintSeconds = lapsPerStint * lapTimeSeconds;
+  const stintMinutes = stintSeconds / 60;
+
+  document.getElementById("stintInfo").innerText =
+    `Relais = ${lapsPerStint} tours ≈ ${Math.round(stintMinutes)} minutes`;
 
   const [startH, startM] = startTimeStr.split(":").map(Number);
   let currentTime = startH * 60 + startM;
 
-  const totalStints = raceHours; // 1 relais = 1 heure (pour l’instant)
+  const totalMinutes = raceHours * 60;
 
   const table = document.getElementById("planTable");
   table.innerHTML = "";
 
+  let elapsed = 0;
   let driverIndex = 0;
-  let doneStints = 0;
 
-  while (doneStints < totalStints) {
+  while (elapsed < totalMinutes - 0.01) {
     const driver = drivers[driverIndex];
-
     const repeats = (stintMode === "double") ? 2 : 1;
 
     for (let r = 0; r < repeats; r++) {
-      if (doneStints >= totalStints) break;
+      if (elapsed >= totalMinutes - 0.01) break;
 
       const start = currentTime;
-      const end = currentTime + 60; // 1h par relais pour l’instant
+      const end = currentTime + stintMinutes;
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -148,7 +183,7 @@ function generatePlan() {
       table.appendChild(tr);
 
       currentTime = end;
-      doneStints++;
+      elapsed += stintMinutes;
     }
 
     driverIndex = (driverIndex + 1) % drivers.length;
