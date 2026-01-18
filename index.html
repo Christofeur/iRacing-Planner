@@ -8,6 +8,10 @@
     table { border-collapse: collapse; }
     td, th { padding: 6px 10px; }
 
+    .bad {
+      background-color: #ffb3b3;
+    }
+
     #popup {
       position: fixed;
       inset: 0;
@@ -353,6 +357,14 @@ function renderPlan() {
 
   plan.forEach((row, i) => {
     const tr = document.createElement("tr");
+
+    // Vérifier indispo
+    const driverObj = drivers.find(d => d.name === row.driver);
+    const bad = driverObj && !isDriverAvailableForStint(driverObj, row.start, row.end);
+
+    if (bad) {
+      tr.classList.add("bad");
+    }
 
     tr.innerHTML = `
       <td>${formatTime(row.start)}</td>
