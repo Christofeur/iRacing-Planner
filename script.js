@@ -5,7 +5,11 @@ function addDriver() {
   const name = input.value.trim();
   if (name === "") return;
 
-  drivers.push(name);
+  drivers.push({
+    name: name,
+    total: 0 // temps total de conduite attribué
+  });
+
   input.value = "";
   renderDrivers();
 }
@@ -20,7 +24,7 @@ function renderDrivers() {
   list.innerHTML = "";
   drivers.forEach((d, i) => {
     const li = document.createElement("li");
-    li.innerHTML = `${d} <button onclick="removeDriver(${i})">🗑️</button>`;
+    li.innerHTML = `${d.name} <button onclick="removeDriver(${i})">🗑️</button>`;
     list.appendChild(li);
   });
 }
@@ -36,18 +40,29 @@ function generatePlan() {
   const pitMinutes = Number(document.getElementById("pitMinutes").value);
 
   const totalMinutes = raceHours * 60;
+
+  // Reset des compteurs
+  drivers.forEach(d => d.total = 0);
+
   const table = document.getElementById("planTable");
   table.innerHTML = "";
 
   let currentTime = 0;
-  let stintIndex = 0;
 
   while (currentTime < totalMinutes) {
-    const driver = drivers[stintIndex % drivers.length];
+    // Trier les pilotes par temps déjà roulé (celui qui a le moins roulé passe en priorité)
+    drivers.sort((a, b) => a.total - b.total);
+
+    const driver = drivers[0];
+
     const start = currentTime;
     const end = Math.min(currentTime + stintMinutes, totalMinutes);
+    const duration = end - start;
 
-    addRow(start, end, driver, "Drive");
+    addRow(start, end, driver.name, "Drive");
+
+    // Ajouter le temps de conduite au pilote
+    driver.total += duration;
 
     currentTime = end;
 
@@ -55,9 +70,10 @@ function generatePlan() {
       addRow(currentTime, currentTime + pitMinutes, "—", "Pit");
       currentTime += pitMinutes;
     }
-
-    stintIndex++;
   }
+
+  // Remettre l'ordre d'origine pour l'affichage de la liste
+  renderDrivers();
 }
 
 function addRow(startMin, endMin, driver, action) {
