@@ -8,11 +8,9 @@
     table { border-collapse: collapse; }
     td, th { padding: 6px 10px; }
 
-    .bad {
-      background-color: #ffb3b3;
-    }
+    .bad { background-color: #ffb3b3; }
 
-    #popup {
+    #popup, #savePopup {
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.5);
@@ -21,15 +19,15 @@
       justify-content: center;
     }
 
-    #popupContent {
+    .popupContent {
       background: white;
       padding: 20px;
       border-radius: 8px;
-      min-width: 250px;
+      min-width: 300px;
       text-align: center;
     }
 
-    #popupContent button {
+    .popupContent button {
       display: block;
       width: 100%;
       margin: 5px 0;
@@ -94,14 +92,16 @@
 
 <br><br>
 
-<button onclick="generateBasePlan()">📋 Générer le planning de base</button>
+<button onclick="generateBasePlan()">📋 Générer le planning</button>
+<button onclick="openSavePopup()">💾 Sauvegarder</button>
+<button onclick="openLoadPopup()">📂 Charger</button>
 
 <p id="stintInfo" style="font-weight:bold;"></p>
 <p id="iracingRuleInfo" style="font-weight:bold;"></p>
 
 <hr>
 
-<h2>Planning (éditable)</h2>
+<h2>Planning</h2>
 
 <table border="1">
   <thead>
@@ -121,12 +121,23 @@
 <h2>Contrôles</h2>
 <div id="checks"></div>
 
-<!-- POPUP -->
+<!-- Popup choix pilote -->
 <div id="popup">
-  <div id="popupContent">
+  <div class="popupContent">
     <h3>Choisir le pilote</h3>
     <div id="popupButtons"></div>
     <button onclick="closePopup()">Annuler</button>
+  </div>
+</div>
+
+<!-- Popup sauvegarde -->
+<div id="savePopup">
+  <div class="popupContent">
+    <h3>Sauvegardes</h3>
+    <input type="text" id="saveName" placeholder="Nom du planning">
+    <button onclick="savePlan()">💾 Sauvegarder</button>
+    <div id="saveList"></div>
+    <button onclick="closeSavePopup()">Fermer</button>
   </div>
 </div>
 
@@ -135,311 +146,248 @@ let drivers = [];
 let plan = [];
 let changeIndex = null;
 
-// ---------- Gestion pilotes ----------
+// -------------------- UTIL --------------------
+
+function qs(id) { return document.getElementById(id); }
+
+// -------------------- PILOTES --------------------
 
 function addDriver() {
-  const input = document.getElementById("driverName");
-  const name = input.value.trim();
+  const name = qs("driverName").value.trim();
   if (!name) return;
-
-  drivers.push({
-    name: name,
-    unavailable: []
-  });
-
-  input.value = "";
+  drivers.push({ name, unavailable: [] });
+  qs("driverName").value = "";
   renderDrivers();
 }
 
-function removeDriver(index) {
-  drivers.splice(index, 1);
+function removeDriver(i) {
+  drivers.splice(i,1);
   renderDrivers();
 }
 
-function addUnavailable(index) {
-  drivers[index].unavailable.push({ from: "00:00", to: "00:00" });
+function addUnavailable(i) {
+  drivers[i].unavailable.push({from:"00:00", to:"00:00"});
   renderDrivers();
 }
 
-function updateUnavailable(driverIndex, unavIndex, field, value) {
-  drivers[driverIndex].unavailable[unavIndex][field] = value;
+function updateUnavailable(i,j,f,v) {
+  drivers[i].unavailable[j][f]=v;
 }
 
-function removeUnavailable(driverIndex, unavIndex) {
-  drivers[driverIndex].unavailable.splice(unavIndex, 1);
+function removeUnavailable(i,j) {
+  drivers[i].unavailable.splice(j,1);
   renderDrivers();
 }
 
 function renderDrivers() {
-  const container = document.getElementById("driversContainer");
-  container.innerHTML = "";
-
-  drivers.forEach((driver, i) => {
+  const c = qs("driversContainer");
+  c.innerHTML = "";
+  drivers.forEach((d,i)=>{
     const div = document.createElement("div");
-    div.style.border = "1px solid #ccc";
-    div.style.padding = "10px";
-    div.style.marginBottom = "10px";
-
-    let html = `<strong>${driver.name}</strong> 
-      <button onclick="removeDriver(${i})">❌ Supprimer</button>
-      <br><em>Indisponibilités :</em><br>`;
-
-    driver.unavailable.forEach((u, j) => {
-      html += `
-        <div>
-          De <input type="time" value="${u.from}" onchange="updateUnavailable(${i}, ${j}, 'from', this.value)">
-          à <input type="time" value="${u.to}" onchange="updateUnavailable(${i}, ${j}, 'to', this.value)">
-          <button onclick="removeUnavailable(${i}, ${j})">❌</button>
-        </div>
-      `;
+    div.innerHTML = `<b>${d.name}</b> <button onclick="removeDriver(${i})">❌</button><br>`;
+    d.unavailable.forEach((u,j)=>{
+      div.innerHTML += `De <input type="time" value="${u.from}" onchange="updateUnavailable(${i},${j},'from',this.value)">
+      à <input type="time" value="${u.to}" onchange="updateUnavailable(${i},${j},'to',this.value)">
+      <button onclick="removeUnavailable(${i},${j})">❌</button><br>`;
     });
-
-    html += `<button onclick="addUnavailable(${i})">➕ Ajouter indisponibilité</button>`;
-    div.innerHTML = html;
-    container.appendChild(div);
+    div.innerHTML += `<button onclick="addUnavailable(${i})">➕ Indispo</button>`;
+    div.style.border="1px solid #ccc"; div.style.padding="10px"; div.style.marginBottom="10px";
+    c.appendChild(div);
   });
 }
 
-// ---------- Temps ----------
+// -------------------- TEMPS --------------------
 
-function parseTimeToMinutes(t) {
-  const parts = t.split(":").map(Number);
-  return parts[0] * 60 + parts[1];
-}
+function parseTimeToMinutes(t){const p=t.split(":").map(Number);return p[0]*60+p[1];}
+function formatTime(m){m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(Math.floor(m%60)).padStart(2,"0");}
+function intervalsOverlap(a,b,c,d){return a<d && c<b;}
 
-function formatTime(totalMinutes) {
-  let m = ((totalMinutes % 1440) + 1440) % 1440;
-  const h = Math.floor(m / 60).toString().padStart(2, "0");
-  const min = Math.floor(m % 60).toString().padStart(2, "0");
-  return `${h}:${min}`;
-}
+// -------------------- DISPO --------------------
 
-// ---------- Disponibilité ----------
-
-function intervalsOverlap(aStart, aEnd, bStart, bEnd) {
-  return aStart < bEnd && bStart < aEnd;
-}
-
-function isDriverAvailableForStint(driver, stintStart, stintEnd) {
+function isDriverAvailableForStint(driver, s, e) {
   for (const u of driver.unavailable) {
-    if (!u.from || !u.to) continue;
+    const us = parseTimeToMinutes(u.from);
+    const ue = parseTimeToMinutes(u.to);
+    let ranges=[];
+    if (us<ue){ ranges.push([us,ue]); ranges.push([us+1440,ue+1440]); }
+    else if (us>ue){ ranges.push([us,ue+1440]); }
+    else return false;
 
-    const uStart = parseTimeToMinutes(u.from);
-    const uEnd = parseTimeToMinutes(u.to);
+    let ss=s, ee=e; if (ee<ss) ee+=1440;
 
-    let ranges = [];
-
-    if (uStart < uEnd) {
-      ranges.push([uStart, uEnd]);
-      ranges.push([uStart + 1440, uEnd + 1440]);
-    } else if (uStart > uEnd) {
-      ranges.push([uStart, uEnd + 1440]);
-    } else {
-      return false;
-    }
-
-    let sStart = stintStart;
-    let sEnd = stintEnd;
-    if (sEnd < sStart) sEnd += 1440;
-
-    for (const [rStart, rEnd] of ranges) {
-      if (intervalsOverlap(sStart, sEnd, rStart, rEnd)) {
-        return false;
-      }
+    for (const [rs,re] of ranges){
+      if (intervalsOverlap(ss,ee,rs,re)) return false;
     }
   }
   return true;
 }
 
-// ---------- Génération de base ----------
+// -------------------- GENERATION --------------------
 
 function generateBasePlan() {
-  if (drivers.length === 0) {
-    alert("Ajoute des pilotes");
-    return;
+  if (drivers.length===0) return alert("Ajoute des pilotes");
+
+  const raceHours=+qs("raceHours").value;
+  const stintMode=qs("stintMode").value;
+  const [sh,sm]=qs("startTime").value.split(":").map(Number);
+  const fuelCap=+qs("fuelCapacity").value;
+  const fuelLap=+qs("fuelPerLap").value;
+  const [lm,ls]=qs("lapTime").value.split(":").map(Number);
+  const pitMin=+qs("pitSeconds").value/60;
+
+  const lapSec=lm*60+ls;
+  const lapsPerStint=Math.floor(fuelCap/fuelLap);
+  const stintMin=(lapsPerStint*lapSec)/60;
+
+  let current=sh*60+sm;
+  let elapsed=0;
+  let idx=0;
+  let first=true;
+  plan=[];
+
+  while (elapsed<raceHours*60-0.01){
+    if (!first){ current+=pitMin; elapsed+=pitMin; }
+    first=false;
+
+    let tries=0, sel=null;
+    while(tries<drivers.length){
+      const d=drivers[idx];
+      if (isDriverAvailableForStint(d,current,current+stintMin)){ sel=d; break; }
+      idx=(idx+1)%drivers.length; tries++;
+    }
+    if (!sel) return alert("Aucun pilote dispo");
+
+    const rep=stintMode==="double"?2:1;
+    for(let r=0;r<rep;r++){
+      if (elapsed>=raceHours*60) break;
+      plan.push({start:current,end:current+stintMin,driver:sel.name,laps:lapsPerStint});
+      current+=stintMin; elapsed+=stintMin;
+      if (r<rep-1){ current+=pitMin; elapsed+=pitMin; }
+    }
+    idx=(drivers.indexOf(sel)+1)%drivers.length;
   }
 
-  const raceHours = Number(document.getElementById("raceHours").value);
-  const stintMode = document.getElementById("stintMode").value;
-  const startTimeStr = document.getElementById("startTime").value;
-
-  const fuelCapacity = Number(document.getElementById("fuelCapacity").value);
-  const fuelPerLap = Number(document.getElementById("fuelPerLap").value);
-  const lapTimeStr = document.getElementById("lapTime").value;
-  const pitSeconds = Number(document.getElementById("pitSeconds").value);
-
-  const [ltM, ltS] = lapTimeStr.split(":").map(Number);
-  const lapTimeSeconds = ltM * 60 + ltS;
-
-  const lapsPerStint = Math.floor(fuelCapacity / fuelPerLap);
-  const stintMinutes = (lapsPerStint * lapTimeSeconds) / 60;
-  const pitMinutes = pitSeconds / 60;
-
-  const totalMinutes = raceHours * 60;
-
-  const [startH, startM] = startTimeStr.split(":").map(Number);
-  let currentTime = startH * 60 + startM;
-
-  let elapsed = 0;
-  let driverIndex = 0;
-  let first = true;
-
-  plan = [];
-
-  while (elapsed < totalMinutes - 0.01) {
-
-    if (!first) {
-      currentTime += pitMinutes;
-      elapsed += pitMinutes;
-    }
-    first = false;
-
-    let tries = 0;
-    let selected = null;
-
-    while (tries < drivers.length) {
-      const d = drivers[driverIndex];
-      const s = currentTime;
-      const e = currentTime + stintMinutes;
-
-      if (isDriverAvailableForStint(d, s, e)) {
-        selected = d;
-        break;
-      }
-      driverIndex = (driverIndex + 1) % drivers.length;
-      tries++;
-    }
-
-    if (!selected) {
-      alert("Aucun pilote dispo à " + formatTime(currentTime));
-      return;
-    }
-
-    const repeats = (stintMode === "double") ? 2 : 1;
-
-    for (let r = 0; r < repeats; r++) {
-      if (elapsed >= totalMinutes - 0.01) break;
-
-      const s = currentTime;
-      const e = currentTime + stintMinutes;
-
-      plan.push({
-        start: s,
-        end: e,
-        driver: selected.name,
-        laps: lapsPerStint
-      });
-
-      currentTime = e;
-      elapsed += stintMinutes;
-
-      if (r < repeats - 1) {
-        currentTime += pitMinutes;
-        elapsed += pitMinutes;
-      }
-    }
-
-    driverIndex = (drivers.indexOf(selected) + 1) % drivers.length;
-  }
-
-  document.getElementById("stintInfo").innerText =
-    `Relais = ${lapsPerStint} tours ≈ ${Math.round(stintMinutes)} min`;
-
-  renderPlan();
-  checkRules();
+  qs("stintInfo").textContent=`Relais = ${lapsPerStint} tours ≈ ${Math.round(stintMin)} min`;
+  renderPlan(); checkRules();
 }
 
-// ---------- Rendu & édition ----------
+// -------------------- RENDER --------------------
 
-function renderPlan() {
-  const tbody = document.getElementById("planTable");
-  tbody.innerHTML = "";
-
-  plan.forEach((row, i) => {
-    const tr = document.createElement("tr");
-
-    // Vérifier indispo
-    const driverObj = drivers.find(d => d.name === row.driver);
-    const bad = driverObj && !isDriverAvailableForStint(driverObj, row.start, row.end);
-
-    if (bad) {
-      tr.classList.add("bad");
-    }
-
-    tr.innerHTML = `
-      <td>${formatTime(row.start)}</td>
-      <td>${formatTime(row.end)}</td>
-      <td>${row.driver}</td>
-      <td>${row.laps}</td>
-      <td><button onclick="openPopup(${i})">🔁 Changer</button></td>
-    `;
-
-    tbody.appendChild(tr);
+function renderPlan(){
+  const tb=qs("planTable"); tb.innerHTML="";
+  plan.forEach((r,i)=>{
+    const tr=document.createElement("tr");
+    const d=drivers.find(x=>x.name===r.driver);
+    if (d && !isDriverAvailableForStint(d,r.start,r.end)) tr.classList.add("bad");
+    tr.innerHTML=`<td>${formatTime(r.start)}</td><td>${formatTime(r.end)}</td><td>${r.driver}</td><td>${r.laps}</td>
+    <td><button onclick="openPopup(${i})">🔁</button></td>`;
+    tb.appendChild(tr);
   });
 }
 
-// ---------- Popup ----------
+// -------------------- POPUP CHOIX PILOTE --------------------
 
-function openPopup(index) {
-  changeIndex = index;
-  const container = document.getElementById("popupButtons");
-  container.innerHTML = "";
-
-  drivers.forEach(d => {
-    const b = document.createElement("button");
-    b.textContent = d.name;
-    b.onclick = () => {
-      plan[changeIndex].driver = d.name;
-      closePopup();
-      renderPlan();
-      checkRules();
+function openPopup(i){
+  changeIndex=i;
+  const c=qs("popupButtons"); c.innerHTML="";
+  drivers.forEach(d=>{
+    const b=document.createElement("button");
+    b.textContent=d.name;
+    b.onclick=()=>{
+      const row=plan[changeIndex];
+      const ok=isDriverAvailableForStint(d,row.start,row.end);
+      if (!ok){
+        if (!confirm(`⚠️ ${d.name} est indisponible sur ce créneau. Forcer quand même ?`)) return;
+      }
+      row.driver=d.name;
+      closePopup(); renderPlan(); checkRules();
     };
-    container.appendChild(b);
+    c.appendChild(b);
   });
+  qs("popup").style.display="flex";
+}
+function closePopup(){ qs("popup").style.display="none"; }
 
-  document.getElementById("popup").style.display = "flex";
+// -------------------- CHECK RULE --------------------
+
+function checkRules(){
+  const c=qs("checks"); c.innerHTML="";
+  const laps={}; drivers.forEach(d=>laps[d.name]=0);
+  plan.forEach(r=>{ if (laps[r.driver]!=null) laps[r.driver]+=r.laps; });
+
+  const raceHours=+qs("raceHours").value;
+  const [lm,ls]=qs("lapTime").value.split(":").map(Number);
+  const lapSec=lm*60+ls;
+  const totalLaps=Math.floor((raceHours*60)/(lapSec/60));
+  const minLaps=Math.floor(totalLaps/drivers.length/4);
+
+  qs("iracingRuleInfo").textContent=`Règle iRacing: minimum ${minLaps} tours par pilote`;
+
+  drivers.forEach(d=>{
+    const ok=laps[d.name]>=minLaps;
+    const div=document.createElement("div");
+    div.textContent=`${d.name} : ${laps[d.name]} tours ${ok?"✅":"❌"}`;
+    div.style.color=ok?"green":"red";
+    c.appendChild(div);
+  });
 }
 
-function closePopup() {
-  document.getElementById("popup").style.display = "none";
-  changeIndex = null;
+// -------------------- SAUVEGARDE --------------------
+
+function openSavePopup(){
+  refreshSaveList();
+  qs("savePopup").style.display="flex";
+}
+function closeSavePopup(){ qs("savePopup").style.display="none"; }
+
+function savePlan(){
+  const name=qs("saveName").value.trim();
+  if (!name) return alert("Nom requis");
+  const data={drivers,plan,settings:{
+    startTime:qs("startTime").value,
+    raceHours:qs("raceHours").value,
+    stintMode:qs("stintMode").value,
+    fuelCapacity:qs("fuelCapacity").value,
+    fuelPerLap:qs("fuelPerLap").value,
+    lapTime:qs("lapTime").value,
+    pitSeconds:qs("pitSeconds").value
+  }};
+  localStorage.setItem("plan_"+name, JSON.stringify(data));
+  refreshSaveList();
 }
 
-// ---------- Vérifications ----------
+function loadPlan(name){
+  const data=JSON.parse(localStorage.getItem("plan_"+name));
+  drivers=data.drivers; plan=data.plan;
+  const s=data.settings;
+  qs("startTime").value=s.startTime;
+  qs("raceHours").value=s.raceHours;
+  qs("stintMode").value=s.stintMode;
+  qs("fuelCapacity").value=s.fuelCapacity;
+  qs("fuelPerLap").value=s.fuelPerLap;
+  qs("lapTime").value=s.lapTime;
+  qs("pitSeconds").value=s.pitSeconds;
+  renderDrivers(); renderPlan(); checkRules();
+}
 
-function checkRules() {
-  const checks = document.getElementById("checks");
-  checks.innerHTML = "";
-
-  const lapsByDriver = {};
-  drivers.forEach(d => lapsByDriver[d.name] = 0);
-
-  for (const row of plan) {
-    if (lapsByDriver[row.driver] !== undefined) {
-      lapsByDriver[row.driver] += row.laps;
-    }
+function deletePlan(name){
+  if (confirm("Supprimer "+name+" ?")){
+    localStorage.removeItem("plan_"+name);
+    refreshSaveList();
   }
+}
 
-  const raceHours = Number(document.getElementById("raceHours").value);
-  const lapTimeStr = document.getElementById("lapTime").value;
-  const [ltM, ltS] = lapTimeStr.split(":").map(Number);
-  const lapTimeSeconds = ltM * 60 + ltS;
-
-  const totalMinutes = raceHours * 60;
-  const totalLaps = Math.floor(totalMinutes / (lapTimeSeconds / 60));
-  const minLaps = Math.floor(totalLaps / drivers.length / 4);
-
-  document.getElementById("iracingRuleInfo").innerText =
-    `Règle iRacing: minimum ${minLaps} tours par pilote`;
-
-  for (const d of drivers) {
-    const v = document.createElement("div");
-    const laps = lapsByDriver[d.name] || 0;
-    const ok = laps >= minLaps;
-
-    v.textContent = `${d.name} : ${laps} tours ${ok ? "✅" : "❌"}`;
-    v.style.color = ok ? "green" : "red";
-    checks.appendChild(v);
+function refreshSaveList(){
+  const d=qs("saveList"); d.innerHTML="";
+  for (let k in localStorage){
+    if (k.startsWith("plan_")){
+      const name=k.replace("plan_","");
+      const div=document.createElement("div");
+      div.innerHTML=`<b>${name}</b> 
+      <button onclick="loadPlan('${name}')">📂</button>
+      <button onclick="deletePlan('${name}')">🗑️</button>`;
+      d.appendChild(div);
+    }
   }
 }
 </script>
