@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <title>iRacing Endurance Planner</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    table { border-collapse: collapse; }
+    td, th { padding: 6px 10px; }
+    .warn { background-color: #ffb3b3; }
+    .ok { background-color: #b3ffb3; }
+  </style>
 </head>
 <body>
 
@@ -61,22 +68,23 @@
 
 <br><br>
 
-<button onclick="generatePlan()">📋 Générer le planning (auto-équilibré)</button>
+<button onclick="generateBasePlan()">📋 Générer le planning de base</button>
 
 <p id="stintInfo" style="font-weight:bold;"></p>
 <p id="iracingRuleInfo" style="font-weight:bold;"></p>
 
 <hr>
 
-<h2>Planning</h2>
+<h2>Planning (éditable)</h2>
 
-<table border="1" cellpadding="5">
+<table border="1">
   <thead>
     <tr>
       <th>Début</th>
       <th>Fin</th>
       <th>Pilote</th>
       <th>Tours</th>
+      <th>Action</th>
     </tr>
   </thead>
   <tbody id="planTable"></tbody>
@@ -84,11 +92,14 @@
 
 <hr>
 
-<h2>Contrôle règle iRacing</h2>
-<div id="iracingCheck"></div>
+<h2>Contrôles</h2>
+<div id="checks"></div>
 
 <script>
 let drivers = [];
+let plan = [];
+
+// ---------- Gestion pilotes ----------
 
 function addDriver() {
   const input = document.getElementById("driverName");
@@ -135,8 +146,7 @@ function renderDrivers() {
 
     let html = `<strong>${driver.name}</strong> 
       <button onclick="removeDriver(${i})">❌ Supprimer</button>
-      <br><br>
-      <em>Indisponibilités :</em><br>`;
+      <br><em>Indisponibilités :</em><br>`;
 
     driver.unavailable.forEach((u, j) => {
       html += `
@@ -149,13 +159,12 @@ function renderDrivers() {
     });
 
     html += `<button onclick="addUnavailable(${i})">➕ Ajouter indisponibilité</button>`;
-
     div.innerHTML = html;
     container.appendChild(div);
   });
 }
 
-// ---------------- TEMPS ----------------
+// ---------- Temps ----------
 
 function parseTimeToMinutes(t) {
   const parts = t.split(":").map(Number);
@@ -163,11 +172,13 @@ function parseTimeToMinutes(t) {
 }
 
 function formatTime(totalMinutes) {
-  let m = ((totalMinutes % (24 * 60)) + (24 * 60)) % (24 * 60);
+  let m = ((totalMinutes % 1440) + 1440) % 1440;
   const h = Math.floor(m / 60).toString().padStart(2, "0");
   const min = Math.floor(m % 60).toString().padStart(2, "0");
   return `${h}:${min}`;
 }
+
+// ---------- Disponibilité ----------
 
 function intervalsOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && bStart < aEnd;
@@ -201,28 +212,17 @@ function isDriverAvailableForStint(driver, stintStart, stintEnd) {
       }
     }
   }
-
   return true;
 }
 
-// ---------------- AUTO EQUILIBRAGE ----------------
+// ---------- Génération de base ----------
 
-function generatePlan() {
-  // On tente plusieurs générations jusqu'à conformité
-  const MAX_TRIES = 50;
-
-  for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
-    const result = generatePlanOnce(true);
-    if (result.ok) {
-      renderResult(result);
-      return;
-    }
+function generateBasePlan() {
+  if (drivers.length === 0) {
+    alert("Ajoute des pilotes");
+    return;
   }
 
-  alert("❌ Impossible d'équilibrer automatiquement le planning avec ces contraintes.");
-}
-
-function generatePlanOnce(autoBalance) {
   const raceHours = Number(document.getElementById("raceHours").value);
   const stintMode = document.getElementById("stintMode").value;
   const startTimeStr = document.getElementById("startTime").value;
@@ -230,7 +230,6 @@ function generatePlanOnce(autoBalance) {
   const fuelCapacity = Number(document.getElementById("fuelCapacity").value);
   const fuelPerLap = Number(document.getElementById("fuelPerLap").value);
   const lapTimeStr = document.getElementById("lapTime").value;
-
   const pitSeconds = Number(document.getElementById("pitSeconds").value);
 
   const [ltM, ltS] = lapTimeStr.split(":").map(Number);
@@ -241,47 +240,43 @@ function generatePlanOnce(autoBalance) {
   const pitMinutes = pitSeconds / 60;
 
   const totalMinutes = raceHours * 60;
-  const totalLaps = Math.floor(totalMinutes / (lapTimeSeconds / 60));
-  const minLapsPerDriver = Math.floor(totalLaps / drivers.length / 4);
 
   const [startH, startM] = startTimeStr.split(":").map(Number);
   let currentTime = startH * 60 + startM;
 
   let elapsed = 0;
-  let firstStint = true;
+  let driverIndex = 0;
+  let first = true;
 
-  const driverLapCount = {};
-  drivers.forEach(d => driverLapCount[d.name] = 0);
-
-  const plan = [];
+  plan = [];
 
   while (elapsed < totalMinutes - 0.01) {
 
-    if (!firstStint) {
+    if (!first) {
       currentTime += pitMinutes;
       elapsed += pitMinutes;
     }
-    firstStint = false;
+    first = false;
 
-    // Trier pilotes par ceux qui ont le moins de tours
-    const sortedDrivers = [...drivers].sort((a, b) => {
-      return (driverLapCount[a.name] || 0) - (driverLapCount[b.name] || 0);
-    });
+    let tries = 0;
+    let selected = null;
 
-    let selectedDriver = null;
+    while (tries < drivers.length) {
+      const d = drivers[driverIndex];
+      const s = currentTime;
+      const e = currentTime + stintMinutes;
 
-    for (const d of sortedDrivers) {
-      const stintStart = currentTime;
-      const stintEnd = currentTime + stintMinutes;
-
-      if (isDriverAvailableForStint(d, stintStart, stintEnd)) {
-        selectedDriver = d;
+      if (isDriverAvailableForStint(d, s, e)) {
+        selected = d;
         break;
       }
+      driverIndex = (driverIndex + 1) % drivers.length;
+      tries++;
     }
 
-    if (!selectedDriver) {
-      return { ok: false };
+    if (!selected) {
+      alert("Aucun pilote dispo à " + formatTime(currentTime));
+      return;
     }
 
     const repeats = (stintMode === "double") ? 2 : 1;
@@ -289,19 +284,17 @@ function generatePlanOnce(autoBalance) {
     for (let r = 0; r < repeats; r++) {
       if (elapsed >= totalMinutes - 0.01) break;
 
-      const start = currentTime;
-      const end = currentTime + stintMinutes;
+      const s = currentTime;
+      const e = currentTime + stintMinutes;
 
       plan.push({
-        start,
-        end,
-        driver: selectedDriver.name,
+        start: s,
+        end: e,
+        driver: selected.name,
         laps: lapsPerStint
       });
 
-      driverLapCount[selectedDriver.name] += lapsPerStint;
-
-      currentTime = end;
+      currentTime = e;
       elapsed += stintMinutes;
 
       if (r < repeats - 1) {
@@ -309,60 +302,92 @@ function generatePlanOnce(autoBalance) {
         elapsed += pitMinutes;
       }
     }
+
+    driverIndex = (drivers.indexOf(selected) + 1) % drivers.length;
   }
 
-  // Vérification règle iRacing
-  let allOk = true;
-  for (const d of drivers) {
-    if ((driverLapCount[d.name] || 0) < minLapsPerDriver) {
-      allOk = false;
-    }
-  }
+  document.getElementById("stintInfo").innerText =
+    `Relais = ${lapsPerStint} tours ≈ ${Math.round(stintMinutes)} min`;
 
-  return {
-    ok: allOk,
-    plan,
-    driverLapCount,
-    minLapsPerDriver,
-    lapsPerStint,
-    stintMinutes,
-    totalLaps
-  };
+  renderPlan();
+  checkRules();
 }
 
-function renderResult(result) {
-  const table = document.getElementById("planTable");
-  table.innerHTML = "";
+// ---------- Rendu & édition ----------
 
-  for (const row of result.plan) {
+function renderPlan() {
+  const tbody = document.getElementById("planTable");
+  tbody.innerHTML = "";
+
+  plan.forEach((row, i) => {
     const tr = document.createElement("tr");
+
     tr.innerHTML = `
       <td>${formatTime(row.start)}</td>
       <td>${formatTime(row.end)}</td>
       <td>${row.driver}</td>
       <td>${row.laps}</td>
+      <td><button onclick="changeDriver(${i})">🔁 Changer</button></td>
     `;
-    table.appendChild(tr);
+
+    tbody.appendChild(tr);
+  });
+}
+
+function changeDriver(index) {
+  const names = drivers.map(d => d.name).join("\n");
+  const choice = prompt("Choisis le pilote :\n" + names);
+
+  if (!choice) return;
+
+  const exists = drivers.some(d => d.name === choice);
+  if (!exists) {
+    alert("Pilote inconnu");
+    return;
   }
 
-  document.getElementById("stintInfo").innerText =
-    `Relais = ${result.lapsPerStint} tours ≈ ${Math.round(result.stintMinutes)} min | Total ≈ ${result.totalLaps} tours`;
+  plan[index].driver = choice;
+  renderPlan();
+  checkRules();
+}
+
+// ---------- Vérifications ----------
+
+function checkRules() {
+  const checks = document.getElementById("checks");
+  checks.innerHTML = "";
+
+  // Compter tours
+  const lapsByDriver = {};
+  drivers.forEach(d => lapsByDriver[d.name] = 0);
+
+  for (const row of plan) {
+    if (lapsByDriver[row.driver] !== undefined) {
+      lapsByDriver[row.driver] += row.laps;
+    }
+  }
+
+  // Règle iRacing
+  const raceHours = Number(document.getElementById("raceHours").value);
+  const lapTimeStr = document.getElementById("lapTime").value;
+  const [ltM, ltS] = lapTimeStr.split(":").map(Number);
+  const lapTimeSeconds = ltM * 60 + ltS;
+
+  const totalMinutes = raceHours * 60;
+  const totalLaps = Math.floor(totalMinutes / (lapTimeSeconds / 60));
+  const minLaps = Math.floor(totalLaps / drivers.length / 4);
 
   document.getElementById("iracingRuleInfo").innerText =
-    `Règle iRacing: minimum ${result.minLapsPerDriver} tours par pilote`;
-
-  const checkDiv = document.getElementById("iracingCheck");
-  checkDiv.innerHTML = "";
+    `Règle iRacing: minimum ${minLaps} tours par pilote`;
 
   for (const d of drivers) {
-    const laps = result.driverLapCount[d.name] || 0;
-    const ok = laps >= result.minLapsPerDriver;
+    const v = document.createElement("div");
+    const laps = lapsByDriver[d.name] || 0;
+    const ok = laps >= minLaps;
 
-    const line = document.createElement("div");
-    line.innerHTML = `${d.name} : ${laps} tours ${ok ? "✅" : "❌"}`;
-    line.style.color = ok ? "green" : "red";
-
-    checkDiv.appendChild(line);
+    v.textContent = `${d.name} : ${laps} tours ${ok ? "✅" : "❌"}`;
+    v.style.color = ok ? "green" : "red";
+    checks.appendChild(v);
   }
 }
 </script>
