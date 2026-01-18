@@ -1,9 +1,9 @@
 let drivers = [];
 
-window.onload = function () {
-  document.getElementById("addDriverBtn").onclick = addDriver;
-  document.getElementById("generateBtn").onclick = generatePlan;
-};
+document.addEventListener("DOMContentLoaded", function () {
+  document.getElementById("addDriverBtn").addEventListener("click", addDriver);
+  document.getElementById("generateBtn").addEventListener("click", generatePlan);
+});
 
 function addDriver() {
   const input = document.getElementById("driverName");
@@ -30,7 +30,7 @@ function renderDrivers() {
 
     const btn = document.createElement("button");
     btn.textContent = "❌";
-    btn.onclick = () => removeDriver(i);
+    btn.addEventListener("click", () => removeDriver(i));
 
     li.appendChild(btn);
     ul.appendChild(li);
@@ -66,7 +66,7 @@ function generatePlan() {
   const fuelPerLap = parseFloat(document.getElementById("fuelPerLap").value);
   const lapTimeStr = document.getElementById("lapTime").value;
 
-  const stintMode = document.getElementById("stintMode").value; // single ou double
+  const stintMode = document.getElementById("stintMode").value;
 
   const lapTimeSeconds = parseTimeToSeconds(lapTimeStr);
 
