@@ -7,7 +7,8 @@ function addDriver() {
 
   drivers.push({
     name: name,
-    total: 0
+    total: 0,
+    mode: "single" // single ou double
   });
 
   input.value = "";
@@ -19,20 +20,31 @@ function removeDriver(index) {
   renderDrivers();
 }
 
+function setDriverMode(index, mode) {
+  drivers[index].mode = mode;
+}
+
 function renderDrivers() {
-  const ul = document.getElementById("driversList");
-  ul.innerHTML = "";
+  const tbody = document.getElementById("driversTable");
+  tbody.innerHTML = "";
 
   drivers.forEach((d, i) => {
-    const li = document.createElement("li");
-    li.textContent = d.name + " ";
+    const tr = document.createElement("tr");
 
-    const btn = document.createElement("button");
-    btn.textContent = "❌";
-    btn.onclick = () => removeDriver(i);
+    tr.innerHTML = `
+      <td>${d.name}</td>
+      <td>
+        <select onchange="setDriverMode(${i}, this.value)">
+          <option value="single" ${d.mode === "single" ? "selected" : ""}>Simple</option>
+          <option value="double" ${d.mode === "double" ? "selected" : ""}>Double</option>
+        </select>
+      </td>
+      <td>
+        <button onclick="removeDriver(${i})">❌</button>
+      </td>
+    `;
 
-    li.appendChild(btn);
-    ul.appendChild(li);
+    tbody.appendChild(tr);
   });
 }
 
@@ -41,11 +53,8 @@ function parseTimeToSeconds(t) {
   return parts[0] * 60 + parts[1];
 }
 
-// ✅ Fonction corrigée : wrap sur 24h
 function formatTime(totalMinutes) {
   let m = Math.round(totalMinutes);
-
-  // wrap 24h
   m = ((m % (24 * 60)) + (24 * 60)) % (24 * 60);
 
   const h = Math.floor(m / 60).toString().padStart(2, "0");
@@ -67,11 +76,6 @@ function generatePlan() {
   const fuelCapacity = parseFloat(document.getElementById("fuelCapacity").value);
   const fuelPerLap = parseFloat(document.getElementById("fuelPerLap").value);
   const lapTimeStr = document.getElementById("lapTime").value;
-
-  if (!startTimeStr) {
-    alert("Heure de départ invalide");
-    return;
-  }
 
   const lapTimeSeconds = parseTimeToSeconds(lapTimeStr);
 
@@ -101,15 +105,21 @@ function generatePlan() {
     drivers.sort((a, b) => a.total - b.total);
     const driver = drivers[0];
 
-    const start = currentTime;
-    const end = currentTime + stintMinutes;
+    const repeats = driver.mode === "double" ? 2 : 1;
 
-    addRow(start, end, driver.name);
+    for (let r = 0; r < repeats; r++) {
+      if (elapsed >= totalMinutes - 0.01) break;
 
-    driver.total += stintMinutes;
+      const start = currentTime;
+      const end = currentTime + stintMinutes;
 
-    currentTime = end + pitMinutes;
-    elapsed = currentTime - baseStart;
+      addRow(start, end, driver.name);
+
+      driver.total += stintMinutes;
+
+      currentTime = end + pitMinutes;
+      elapsed = currentTime - baseStart;
+    }
   }
 }
 
