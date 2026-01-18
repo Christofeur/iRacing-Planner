@@ -7,7 +7,7 @@ function addDriver() {
 
   drivers.push({
     name: name,
-    total: 0 // temps total de conduite attribué
+    total: 0
   });
 
   input.value = "";
@@ -41,7 +41,7 @@ function generatePlan() {
 
   const totalMinutes = raceHours * 60;
 
-  // Reset des compteurs
+  // Reset compteurs
   drivers.forEach(d => d.total = 0);
 
   const table = document.getElementById("planTable");
@@ -50,9 +50,8 @@ function generatePlan() {
   let currentTime = 0;
 
   while (currentTime < totalMinutes) {
-    // Trier les pilotes par temps déjà roulé (celui qui a le moins roulé passe en priorité)
+    // Pilote qui a le moins roulé
     drivers.sort((a, b) => a.total - b.total);
-
     const driver = drivers[0];
 
     const start = currentTime;
@@ -61,7 +60,6 @@ function generatePlan() {
 
     addRow(start, end, driver.name, "Drive");
 
-    // Ajouter le temps de conduite au pilote
     driver.total += duration;
 
     currentTime = end;
@@ -72,7 +70,6 @@ function generatePlan() {
     }
   }
 
-  // Remettre l'ordre d'origine pour l'affichage de la liste
   renderDrivers();
 }
 
