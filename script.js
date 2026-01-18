@@ -10,12 +10,7 @@ function addDriver() {
   const name = input.value.trim();
   if (!name) return;
 
-  drivers.push({
-    name: name,
-    total: 0,
-    mode: "single"
-  });
-
+  drivers.push(name);
   input.value = "";
   renderDrivers();
 }
@@ -25,31 +20,20 @@ function removeDriver(index) {
   renderDrivers();
 }
 
-function setDriverMode(index, mode) {
-  drivers[index].mode = mode;
-}
-
 function renderDrivers() {
-  const tbody = document.getElementById("driversTable");
-  tbody.innerHTML = "";
+  const ul = document.getElementById("driversList");
+  ul.innerHTML = "";
 
-  drivers.forEach((d, i) => {
-    const tr = document.createElement("tr");
+  drivers.forEach((name, i) => {
+    const li = document.createElement("li");
+    li.textContent = name + " ";
 
-    tr.innerHTML = `
-      <td>${d.name}</td>
-      <td>
-        <select onchange="setDriverMode(${i}, this.value)">
-          <option value="single" ${d.mode === "single" ? "selected" : ""}>Simple</option>
-          <option value="double" ${d.mode === "double" ? "selected" : ""}>Double</option>
-        </select>
-      </td>
-      <td>
-        <button onclick="removeDriver(${i})">❌</button>
-      </td>
-    `;
+    const btn = document.createElement("button");
+    btn.textContent = "❌";
+    btn.onclick = () => removeDriver(i);
 
-    tbody.appendChild(tr);
+    li.appendChild(btn);
+    ul.appendChild(li);
   });
 }
 
@@ -82,6 +66,8 @@ function generatePlan() {
   const fuelPerLap = parseFloat(document.getElementById("fuelPerLap").value);
   const lapTimeStr = document.getElementById("lapTime").value;
 
+  const stintMode = document.getElementById("stintMode").value; // single ou double
+
   const lapTimeSeconds = parseTimeToSeconds(lapTimeStr);
 
   const lapsPerStint = Math.floor(fuelCapacity / fuelPerLap);
@@ -99,17 +85,16 @@ function generatePlan() {
   const table = document.getElementById("planTable");
   table.innerHTML = "";
 
-  drivers.forEach(d => d.total = 0);
-
-  let elapsed = 0;
   let currentTime = baseStart;
+  let elapsed = 0;
   const totalMinutes = raceHours * 60;
 
-  while (elapsed < totalMinutes - 0.01) {
-    drivers.sort((a, b) => a.total - b.total);
-    const driver = drivers[0];
+  let driverIndex = 0;
 
-    const repeats = driver.mode === "double" ? 2 : 1;
+  while (elapsed < totalMinutes - 0.01) {
+    const driver = drivers[driverIndex];
+
+    const repeats = (stintMode === "double") ? 2 : 1;
 
     for (let r = 0; r < repeats; r++) {
       if (elapsed >= totalMinutes - 0.01) break;
@@ -117,13 +102,13 @@ function generatePlan() {
       const start = currentTime;
       const end = currentTime + stintMinutes;
 
-      addRow(start, end, driver.name);
-
-      driver.total += stintMinutes;
+      addRow(start, end, driver);
 
       currentTime = end + pitMinutes;
       elapsed = currentTime - baseStart;
     }
+
+    driverIndex = (driverIndex + 1) % drivers.length;
   }
 }
 
