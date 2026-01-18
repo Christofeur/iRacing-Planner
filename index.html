@@ -7,8 +7,30 @@
     body { font-family: Arial, sans-serif; }
     table { border-collapse: collapse; }
     td, th { padding: 6px 10px; }
-    .warn { background-color: #ffb3b3; }
-    .ok { background-color: #b3ffb3; }
+
+    #popup {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #popupContent {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      min-width: 250px;
+      text-align: center;
+    }
+
+    #popupContent button {
+      display: block;
+      width: 100%;
+      margin: 5px 0;
+      padding: 8px;
+    }
   </style>
 </head>
 <body>
@@ -95,9 +117,19 @@
 <h2>Contrôles</h2>
 <div id="checks"></div>
 
+<!-- POPUP -->
+<div id="popup">
+  <div id="popupContent">
+    <h3>Choisir le pilote</h3>
+    <div id="popupButtons"></div>
+    <button onclick="closePopup()">Annuler</button>
+  </div>
+</div>
+
 <script>
 let drivers = [];
 let plan = [];
+let changeIndex = null;
 
 // ---------- Gestion pilotes ----------
 
@@ -327,28 +359,38 @@ function renderPlan() {
       <td>${formatTime(row.end)}</td>
       <td>${row.driver}</td>
       <td>${row.laps}</td>
-      <td><button onclick="changeDriver(${i})">🔁 Changer</button></td>
+      <td><button onclick="openPopup(${i})">🔁 Changer</button></td>
     `;
 
     tbody.appendChild(tr);
   });
 }
 
-function changeDriver(index) {
-  const names = drivers.map(d => d.name).join("\n");
-  const choice = prompt("Choisis le pilote :\n" + names);
+// ---------- Popup ----------
 
-  if (!choice) return;
+function openPopup(index) {
+  changeIndex = index;
+  const container = document.getElementById("popupButtons");
+  container.innerHTML = "";
 
-  const exists = drivers.some(d => d.name === choice);
-  if (!exists) {
-    alert("Pilote inconnu");
-    return;
-  }
+  drivers.forEach(d => {
+    const b = document.createElement("button");
+    b.textContent = d.name;
+    b.onclick = () => {
+      plan[changeIndex].driver = d.name;
+      closePopup();
+      renderPlan();
+      checkRules();
+    };
+    container.appendChild(b);
+  });
 
-  plan[index].driver = choice;
-  renderPlan();
-  checkRules();
+  document.getElementById("popup").style.display = "flex";
+}
+
+function closePopup() {
+  document.getElementById("popup").style.display = "none";
+  changeIndex = null;
 }
 
 // ---------- Vérifications ----------
@@ -357,7 +399,6 @@ function checkRules() {
   const checks = document.getElementById("checks");
   checks.innerHTML = "";
 
-  // Compter tours
   const lapsByDriver = {};
   drivers.forEach(d => lapsByDriver[d.name] = 0);
 
@@ -367,7 +408,6 @@ function checkRules() {
     }
   }
 
-  // Règle iRacing
   const raceHours = Number(document.getElementById("raceHours").value);
   const lapTimeStr = document.getElementById("lapTime").value;
   const [ltM, ltS] = lapTimeStr.split(":").map(Number);
