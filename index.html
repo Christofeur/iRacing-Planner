@@ -7,71 +7,83 @@
 </head>
 <body>
 
-  <h1>🏁 iRacing Endurance Planner</h1>
+<h1>🏁 iRacing Endurance Planner</h1>
 
-  <div class="card">
-    <h2>⚙️ Paramètres de course</h2>
+<div class="box">
+  <h2>⚙️ Paramètres de course</h2>
 
-    <label>Heure de départ (HH:MM)</label>
-      <input type="time" id="startTime" value="13:00">
+  <label>Heure de départ (HH:MM)</label>
+  <input type="time" id="startTime" value="13:00">
 
-    <label>Durée de la course (heures):
-      <input type="number" id="raceHours" value="6">
-    </label>
+  <label>Durée de la course (heures)</label>
+  <input type="number" id="raceDuration" value="6">
 
-    <label>Capacité carburant (L)</label>
-      <input type="number" id="fuelCapacity" value="120">
+  <label>Temps de pit (secondes)</label>
+  <input type="number" id="pitSeconds" value="40">
 
-    <label>Consommation par tour (L)</label>
-      <input type="number" id="fuelPerLap" value="3.2" step="0.01">
+  <hr>
 
-    <label>Temps au tour moyen (mm:ss)</label>
-      <input type="text" id="lapTime" value="01:45">
+  <label>Capacité carburant (L)</label>
+  <input type="number" id="fuelCapacity" value="120">
 
-    
+  <label>Consommation par tour (L)</label>
+  <input type="number" id="fuelPerLap" value="3.2" step="0.01">
 
-    <label>Temps de pit (secondes):
-      <input type="number" id="pitMinutes" value="2">
-    </label>
+  <label>Temps au tour moyen (mm:ss)</label>
+  <input type="text" id="lapTime" value="01:45">
 
-    <label>Classe:
-      <select id="carClass">
-        <option>GT3</option>
-        <option>LMP2</option>
-        <option>GTP</option>
-      </select>
-    </label>
-  </div>
+</div>
 
-  <div class="card">
-    <h2>🧑‍✈️ Pilotes</h2>
-    <input type="text" id="driverName" placeholder="Nom du pilote">
-    <button onclick="addDriver()">➕ Ajouter</button>
+<div class="box">
+  <h2>👨‍✈️ Pilotes</h2>
 
-    <ul id="driverList"></ul>
-  </div>
+  <input type="text" id="driverName" placeholder="Nom du pilote">
+  <button onclick="addDriver()">➕ Ajouter</button>
 
-  <button class="generate" onclick="generatePlan()">🧮 Générer le plan</button>
+  <ul id="driversList"></ul>
+</div>
 
-  <div class="card">
-    <h2>📋 Plan de course</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Début</th>
-          <th>Fin</th>
-          <th>Pilote</th>
+<button class="mainBtn" onclick="generatePlan()">📋 Générer le plan</button>
+
+<div id="stintInfo" style="margin-top:10px; font-weight:bold; text-align:center;"></div>
+
+<div class="box">
+  <h2>🗺️ Plan de course</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Début</th>
+        <th>Fin</th>
+        <th>Pilote</th>
       </tr>
-      </thead>
-      <tbody id="planTable"></tbody>
-    </table>
-  </div>
+    </thead>
+    <tbody id="planTable"></tbody>
+  </table>
+</div>
 
 <script src="script.js"></script>
+
+<script>
+function addDriver() {
+  const input = document.getElementById("driverName");
+  const name = input.value.trim();
+  if (!name) return;
+
+  const ul = document.getElementById("driversList");
+  const li = document.createElement("li");
+  li.textContent = name;
+
+  const btn = document.createElement("button");
+  btn.textContent = "❌";
+  btn.onclick = () => li.remove();
+
+  li.appendChild(btn);
+  ul.appendChild(li);
+
+  input.value = "";
+}
+</script>
+
 </body>
 </html>
-
-
-
-
-
