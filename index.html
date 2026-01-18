@@ -64,6 +64,7 @@
 <button onclick="generatePlan()">📋 Générer le planning</button>
 
 <p id="stintInfo" style="font-weight:bold;"></p>
+<p id="iracingRuleInfo" style="font-weight:bold;"></p>
 
 <hr>
 
@@ -75,10 +76,16 @@
       <th>Début</th>
       <th>Fin</th>
       <th>Pilote</th>
+      <th>Tours</th>
     </tr>
   </thead>
   <tbody id="planTable"></tbody>
 </table>
+
+<hr>
+
+<h2>Contrôle règle iRacing</h2>
+<div id="iracingCheck"></div>
 
 <script>
 let drivers = [];
@@ -162,36 +169,28 @@ function formatTime(totalMinutes) {
   return `${h}:${min}`;
 }
 
-// Test si deux intervalles se chevauchent
 function intervalsOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && bStart < aEnd;
 }
 
-// Vérifie si un pilote est dispo sur TOUT le relais
 function isDriverAvailableForStint(driver, stintStart, stintEnd) {
-  // On travaille en minutes modulo 24h, mais on peut tester sur 48h pour gérer minuit
   for (const u of driver.unavailable) {
     if (!u.from || !u.to) continue;
 
     const uStart = parseTimeToMinutes(u.from);
     const uEnd = parseTimeToMinutes(u.to);
 
-    // On déplie les cas qui passent minuit
     let ranges = [];
 
     if (uStart < uEnd) {
-      // ex: 14:00 -> 16:00
       ranges.push([uStart, uEnd]);
       ranges.push([uStart + 1440, uEnd + 1440]);
     } else if (uStart > uEnd) {
-      // ex: 22:00 -> 02:00
       ranges.push([uStart, uEnd + 1440]);
     } else {
-      // égal = indispo toute la journée
       return false;
     }
 
-    // Tester le relais sur 0-48h
     let sStart = stintStart;
     let sEnd = stintEnd;
     if (sEnd < sStart) sEnd += 1440;
@@ -222,20 +221,25 @@ function generatePlan() {
     return;
   }
 
-  const lapTimeParts = lapTimeStr.split(":").map(Number);
-  const lapTimeSeconds = lapTimeParts[0] * 60 + lapTimeParts[1];
+  const [ltM, ltS] = lapTimeStr.split(":").map(Number);
+  const lapTimeSeconds = ltM * 60 + ltS;
 
   const lapsPerStint = Math.floor(fuelCapacity / fuelPerLap);
   const stintMinutes = (lapsPerStint * lapTimeSeconds) / 60;
   const pitMinutes = pitSeconds / 60;
 
+  const totalMinutes = raceHours * 60;
+  const totalLaps = Math.floor(totalMinutes / (lapTimeSeconds / 60));
+  const minLapsPerDriver = Math.floor(totalLaps / drivers.length / 4);
+
   document.getElementById("stintInfo").innerText =
-    `Relais = ${lapsPerStint} tours ≈ ${Math.round(stintMinutes)} min`;
+    `Relais = ${lapsPerStint} tours ≈ ${Math.round(stintMinutes)} min | Total ≈ ${totalLaps} tours`;
+
+  document.getElementById("iracingRuleInfo").innerText =
+    `Règle iRacing: minimum ${minLapsPerDriver} tours par pilote`;
 
   const [startH, startM] = startTimeStr.split(":").map(Number);
   let currentTime = startH * 60 + startM;
-
-  const totalMinutes = raceHours * 60;
 
   const table = document.getElementById("planTable");
   table.innerHTML = "";
@@ -244,9 +248,11 @@ function generatePlan() {
   let driverIndex = 0;
   let firstStint = true;
 
+  const driverLapCount = {};
+  drivers.forEach(d => driverLapCount[d.name] = 0);
+
   while (elapsed < totalMinutes - 0.01) {
 
-    // Ajouter pit avant le relais (sauf premier)
     if (!firstStint) {
       currentTime += pitMinutes;
       elapsed += pitMinutes;
@@ -272,7 +278,7 @@ function generatePlan() {
     }
 
     if (!selectedDriver) {
-      alert("❌ Aucun pilote disponible pour le relais à " + formatTime(currentTime));
+      alert("❌ Aucun pilote disponible à " + formatTime(currentTime));
       return;
     }
 
@@ -289,8 +295,11 @@ function generatePlan() {
         <td>${formatTime(start)}</td>
         <td>${formatTime(end)}</td>
         <td>${selectedDriver.name}</td>
+        <td>${lapsPerStint}</td>
       `;
       table.appendChild(tr);
+
+      driverLapCount[selectedDriver.name] += lapsPerStint;
 
       currentTime = end;
       elapsed += stintMinutes;
@@ -302,6 +311,33 @@ function generatePlan() {
     }
 
     driverIndex = (drivers.indexOf(selectedDriver) + 1) % drivers.length;
+  }
+
+  // ----------- Vérification règle iRacing -----------
+
+  const checkDiv = document.getElementById("iracingCheck");
+  checkDiv.innerHTML = "";
+
+  let allOk = true;
+
+  for (const d of drivers) {
+    const laps = driverLapCount[d.name] || 0;
+    const ok = laps >= minLapsPerDriver;
+
+    const line = document.createElement("div");
+    line.innerHTML = `${d.name} : ${laps} tours ${ok ? "✅" : "❌"}`;
+    if (!ok) {
+      line.style.color = "red";
+      allOk = false;
+    } else {
+      line.style.color = "green";
+    }
+
+    checkDiv.appendChild(line);
+  }
+
+  if (!allOk) {
+    alert("⚠️ Attention : la règle iRacing n'est PAS respectée pour tous les pilotes !");
   }
 }
 </script>
