@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>iRacing Endurance Planner</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h1>🏁 iRacing Endurance Planner</h1>
+
+  <div class="card">
+    <h2>⚙️ Paramètres de course</h2>
+    <label>Durée de la course (heures):
+      <input type="number" id="raceHours" value="6">
+    </label>
+
+    <label>Durée max d'un stint (minutes):
+      <input type="number" id="stintMinutes" value="60">
+    </label>
+
+    <label>Temps de pit (minutes):
+      <input type="number" id="pitMinutes" value="2">
+    </label>
+
+    <label>Classe:
+      <select id="carClass">
+        <option>GT3</option>
+        <option>LMP2</option>
+        <option>GTP</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="card">
+    <h2>🧑‍✈️ Pilotes</h2>
+    <input type="text" id="driverName" placeholder="Nom du pilote">
+    <button onclick="addDriver()">➕ Ajouter</button>
+
+    <ul id="driverList"></ul>
+  </div>
+
+  <button class="generate" onclick="generatePlan()">🧮 Générer le plan</button>
+
+  <div class="card">
+    <h2>📋 Plan de course</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Début</th>
+          <th>Fin</th>
+          <th>Pilote</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="planTable"></tbody>
+    </table>
+  </div>
+
+<script src="script.js"></script>
+</body>
+</html>
