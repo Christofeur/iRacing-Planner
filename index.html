@@ -19,6 +19,11 @@
 
 <h2>Course</h2>
 
+<label>Heure de départ</label>
+<input type="time" id="startTime" value="13:00">
+
+<br><br>
+
 <label>Durée de la course (heures)</label>
 <input type="number" id="raceHours" value="6">
 
@@ -38,7 +43,16 @@
 
 <h2>Planning</h2>
 
-<ol id="planList"></ol>
+<table border="1" cellpadding="5">
+  <thead>
+    <tr>
+      <th>Début</th>
+      <th>Fin</th>
+      <th>Pilote</th>
+    </tr>
+  </thead>
+  <tbody id="planTable"></tbody>
+</table>
 
 <script>
 let drivers = [];
@@ -75,12 +89,26 @@ function renderDrivers() {
   });
 }
 
+function formatTime(totalMinutes) {
+  // wrap 24h
+  let m = ((totalMinutes % (24 * 60)) + (24 * 60)) % (24 * 60);
+  const h = Math.floor(m / 60).toString().padStart(2, "0");
+  const min = Math.floor(m % 60).toString().padStart(2, "0");
+  return `${h}:${min}`;
+}
+
 function generatePlan() {
   const raceHours = Number(document.getElementById("raceHours").value);
   const stintMode = document.getElementById("stintMode").value;
+  const startTimeStr = document.getElementById("startTime").value;
 
   if (drivers.length === 0) {
     alert("Ajoute au moins un pilote");
+    return;
+  }
+
+  if (!startTimeStr) {
+    alert("Heure de départ invalide");
     return;
   }
 
@@ -89,39 +117,42 @@ function generatePlan() {
     return;
   }
 
-  const totalStints = raceHours; // 1 relais = 1 heure pour l’instant
+  const [startH, startM] = startTimeStr.split(":").map(Number);
+  let currentTime = startH * 60 + startM;
 
-  const plan = [];
+  const totalStints = raceHours; // 1 relais = 1 heure (pour l’instant)
+
+  const table = document.getElementById("planTable");
+  table.innerHTML = "";
+
   let driverIndex = 0;
+  let doneStints = 0;
 
-  while (plan.length < totalStints) {
+  while (doneStints < totalStints) {
     const driver = drivers[driverIndex];
 
-    if (stintMode === "single") {
-      plan.push(driver);
-    } else {
-      // double relais
-      plan.push(driver);
-      if (plan.length < totalStints) {
-        plan.push(driver);
-      }
+    const repeats = (stintMode === "double") ? 2 : 1;
+
+    for (let r = 0; r < repeats; r++) {
+      if (doneStints >= totalStints) break;
+
+      const start = currentTime;
+      const end = currentTime + 60; // 1h par relais pour l’instant
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${formatTime(start)}</td>
+        <td>${formatTime(end)}</td>
+        <td>${driver}</td>
+      `;
+      table.appendChild(tr);
+
+      currentTime = end;
+      doneStints++;
     }
 
     driverIndex = (driverIndex + 1) % drivers.length;
   }
-
-  renderPlan(plan);
-}
-
-function renderPlan(plan) {
-  const ol = document.getElementById("planList");
-  ol.innerHTML = "";
-
-  plan.forEach((driver, i) => {
-    const li = document.createElement("li");
-    li.textContent = `Relais ${i + 1} : ${driver}`;
-    ol.appendChild(li);
-  });
 }
 </script>
 
