@@ -148,9 +148,7 @@ function renderDrivers() {
   });
 }
 
-// ----------------------
-// Le reste du code (génération) est IDENTIQUE à avant
-// ----------------------
+// ---------------- LOGIQUE TEMPS ----------------
 
 function parseTimeToSeconds(t) {
   const parts = t.split(":").map(Number);
@@ -162,6 +160,28 @@ function formatTime(totalMinutes) {
   const h = Math.floor(m / 60).toString().padStart(2, "0");
   const min = Math.floor(m % 60).toString().padStart(2, "0");
   return `${h}:${min}`;
+}
+
+// Vérifie si un pilote est dispo à une heure donnée (en minutes absolues)
+function isDriverAvailable(driver, timeMinutes) {
+  const t = ((timeMinutes % (24 * 60)) + (24 * 60)) % (24 * 60);
+
+  for (const u of driver.unavailable) {
+    if (!u.from || !u.to) continue;
+
+    const from = parseTimeToSeconds(u.from) / 60;
+    const to = parseTimeToSeconds(u.to) / 60;
+
+    if (from < to) {
+      // ex: 02:00 -> 05:00
+      if (t >= from && t < to) return false;
+    } else if (from > to) {
+      // ex: 22:00 -> 02:00 (passe minuit)
+      if (t >= from || t < to) return false;
+    }
+  }
+
+  return true;
 }
 
 function generatePlan() {
@@ -203,7 +223,27 @@ function generatePlan() {
   let firstStint = true;
 
   while (elapsed < totalMinutes - 0.01) {
-    const driver = drivers[driverIndex];
+    let selectedDriver = null;
+    let tries = 0;
+
+    // Cherche un pilote dispo
+    while (tries < drivers.length) {
+      const d = drivers[driverIndex];
+
+      if (isDriverAvailable(d, currentTime)) {
+        selectedDriver = d;
+        break;
+      }
+
+      driverIndex = (driverIndex + 1) % drivers.length;
+      tries++;
+    }
+
+    if (!selectedDriver) {
+      alert("❌ Aucun pilote disponible à " + formatTime(currentTime));
+      return;
+    }
+
     const repeats = (stintMode === "double") ? 2 : 1;
 
     for (let r = 0; r < repeats; r++) {
@@ -222,7 +262,7 @@ function generatePlan() {
       tr.innerHTML = `
         <td>${formatTime(start)}</td>
         <td>${formatTime(end)}</td>
-        <td>${driver.name}</td>
+        <td>${selectedDriver.name}</td>
       `;
       table.appendChild(tr);
 
@@ -230,7 +270,7 @@ function generatePlan() {
       elapsed += stintMinutes;
     }
 
-    driverIndex = (driverIndex + 1) % drivers.length;
+    driverIndex = (drivers.indexOf(selectedDriver) + 1) % drivers.length;
   }
 }
 </script>
