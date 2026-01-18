@@ -1,5 +1,10 @@
 let drivers = [];
 
+window.onload = function () {
+  document.getElementById("addDriverBtn").onclick = addDriver;
+  document.getElementById("generateBtn").onclick = generatePlan;
+};
+
 function addDriver() {
   const input = document.getElementById("driverName");
   const name = input.value.trim();
@@ -8,7 +13,7 @@ function addDriver() {
   drivers.push({
     name: name,
     total: 0,
-    mode: "single" // single ou double
+    mode: "single"
   });
 
   input.value = "";
@@ -101,7 +106,6 @@ function generatePlan() {
   const totalMinutes = raceHours * 60;
 
   while (elapsed < totalMinutes - 0.01) {
-    // Pilote qui a le moins roulé
     drivers.sort((a, b) => a.total - b.total);
     const driver = drivers[0];
 
