@@ -37,12 +37,20 @@ function generatePlan() {
 
   const raceHours = Number(document.getElementById("raceHours").value);
   const stintMinutes = Number(document.getElementById("stintMinutes").value);
-  const pitSeconds = Number(document.getElementById("pitMinutes").value); // maintenant en secondes
+  const pitSeconds = Number(document.getElementById("pitMinutes").value);
+
+  const startTimeStr = document.getElementById("startTime").value;
+  if (!startTimeStr) {
+    alert("Entre une heure de départ !");
+    return;
+  }
+
+  const [startHour, startMin] = startTimeStr.split(":").map(Number);
+  const baseStartMinutes = startHour * 60 + startMin;
 
   const totalMinutes = raceHours * 60;
   const pitMinutes = pitSeconds / 60;
 
-  // Reset compteurs
   drivers.forEach(d => d.total = 0);
 
   const table = document.getElementById("planTable");
@@ -51,7 +59,6 @@ function generatePlan() {
   let currentTime = 0;
 
   while (currentTime < totalMinutes) {
-    // Pilote qui a le moins roulé
     drivers.sort((a, b) => a.total - b.total);
     const driver = drivers[0];
 
@@ -59,13 +66,15 @@ function generatePlan() {
     const end = Math.min(currentTime + stintMinutes, totalMinutes);
     const duration = end - start;
 
-    addRow(start, end, driver.name);
+    addRow(
+      baseStartMinutes + start,
+      baseStartMinutes + end,
+      driver.name
+    );
 
     driver.total += duration;
-
     currentTime = end;
 
-    // On ajoute le temps de pit MAIS on ne l'affiche plus
     if (currentTime < totalMinutes) {
       currentTime += pitMinutes;
     }
@@ -88,6 +97,7 @@ function addRow(startMin, endMin, driver) {
 }
 
 function formatTime(min) {
+  min = ((min % (24 * 60)) + (24 * 60)) % (24 * 60); // wrap 24h
   const h = Math.floor(min / 60).toString().padStart(2, "0");
   const m = Math.floor(min % 60).toString().padStart(2, "0");
   return `${h}:${m}`;
