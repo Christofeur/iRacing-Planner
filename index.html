@@ -62,28 +62,8 @@
   </table>
 </div>
 
+<!-- IMPORTANT : il ne doit y avoir AUCUN autre script ici -->
 <script src="script.js"></script>
-
-<script>
-function addDriver() {
-  const input = document.getElementById("driverName");
-  const name = input.value.trim();
-  if (!name) return;
-
-  const ul = document.getElementById("driversList");
-  const li = document.createElement("li");
-  li.textContent = name;
-
-  const btn = document.createElement("button");
-  btn.textContent = "❌";
-  btn.onclick = () => li.remove();
-
-  li.appendChild(btn);
-  ul.appendChild(li);
-
-  input.value = "";
-}
-</script>
 
 </body>
 </html>
