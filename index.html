@@ -7,7 +7,6 @@
     body { font-family: Arial, sans-serif; }
     table { border-collapse: collapse; }
     td, th { padding: 6px 10px; }
-
     .bad { background-color: #ffb3b3; }
 
     #popup, #savePopup {
@@ -40,25 +39,18 @@
 <h1>iRacing Endurance Planner</h1>
 
 <h2>Pilotes</h2>
-
 <input type="text" id="driverName" placeholder="Nom du pilote">
 <button onclick="addDriver()">➕ Ajouter</button>
-
 <div id="driversContainer"></div>
 
 <hr>
 
 <h2>Course</h2>
-
 <label>Heure de départ</label>
-<input type="time" id="startTime" value="13:00">
-
-<br><br>
+<input type="time" id="startTime" value="13:00"><br><br>
 
 <label>Durée de la course (heures)</label>
-<input type="number" id="raceHours" value="6">
-
-<br><br>
+<input type="number" id="raceHours" value="6"><br><br>
 
 <label>Type de relais</label>
 <select id="stintMode">
@@ -69,16 +61,11 @@
 <hr>
 
 <h2>Carburant</h2>
-
 <label>Capacité réservoir (L)</label>
-<input type="number" id="fuelCapacity" value="120">
-
-<br><br>
+<input type="number" id="fuelCapacity" value="120"><br><br>
 
 <label>Consommation par tour (L)</label>
-<input type="number" id="fuelPerLap" value="3.2" step="0.01">
-
-<br><br>
+<input type="number" id="fuelPerLap" value="3.2" step="0.01"><br><br>
 
 <label>Temps au tour moyen (mm:ss)</label>
 <input type="text" id="lapTime" value="01:45">
@@ -86,15 +73,11 @@
 <hr>
 
 <h2>Pit</h2>
-
 <label>Temps de pit (secondes)</label>
-<input type="number" id="pitSeconds" value="40">
-
-<br><br>
+<input type="number" id="pitSeconds" value="40"><br><br>
 
 <button onclick="generateBasePlan()">📋 Générer le planning</button>
-<button onclick="openSavePopup()">💾 Sauvegarder</button>
-<button onclick="openLoadPopup()">📂 Charger</button>
+<button onclick="openSavePopup()">💾 Sauvegarder / Charger</button>
 
 <p id="stintInfo" style="font-weight:bold;"></p>
 <p id="iracingRuleInfo" style="font-weight:bold;"></p>
@@ -102,7 +85,6 @@
 <hr>
 
 <h2>Planning</h2>
-
 <table border="1">
   <thead>
     <tr>
@@ -136,6 +118,7 @@
     <h3>Sauvegardes</h3>
     <input type="text" id="saveName" placeholder="Nom du planning">
     <button onclick="savePlan()">💾 Sauvegarder</button>
+    <hr>
     <div id="saveList"></div>
     <button onclick="closeSavePopup()">Fermer</button>
   </div>
@@ -146,86 +129,64 @@ let drivers = [];
 let plan = [];
 let changeIndex = null;
 
-// -------------------- UTIL --------------------
+function qs(id){ return document.getElementById(id); }
 
-function qs(id) { return document.getElementById(id); }
+// ----------------- Temps -----------------
+function parseTimeToMinutes(t){ const p=t.split(":").map(Number); return p[0]*60+p[1]; }
+function formatTime(m){ m=((m%1440)+1440)%1440; return String(Math.floor(m/60)).padStart(2,"0")+":"+String(Math.floor(m%60)).padStart(2,"0"); }
+function intervalsOverlap(a,b,c,d){ return a<d && c<b; }
 
-// -------------------- PILOTES --------------------
-
-function addDriver() {
-  const name = qs("driverName").value.trim();
-  if (!name) return;
-  drivers.push({ name, unavailable: [] });
-  qs("driverName").value = "";
+// ----------------- Pilotes -----------------
+function addDriver(){
+  const name=qs("driverName").value.trim();
+  if(!name) return;
+  drivers.push({name, unavailable:[]});
+  qs("driverName").value="";
   renderDrivers();
 }
 
-function removeDriver(i) {
-  drivers.splice(i,1);
-  renderDrivers();
-}
+function removeDriver(i){ drivers.splice(i,1); renderDrivers(); }
 
-function addUnavailable(i) {
-  drivers[i].unavailable.push({from:"00:00", to:"00:00"});
-  renderDrivers();
-}
+function addUnavailable(i){ drivers[i].unavailable.push({from:"00:00",to:"00:00"}); renderDrivers(); }
+function updateUnavailable(i,j,f,v){ drivers[i].unavailable[j][f]=v; }
+function removeUnavailable(i,j){ drivers[i].unavailable.splice(j,1); renderDrivers(); }
 
-function updateUnavailable(i,j,f,v) {
-  drivers[i].unavailable[j][f]=v;
-}
-
-function removeUnavailable(i,j) {
-  drivers[i].unavailable.splice(j,1);
-  renderDrivers();
-}
-
-function renderDrivers() {
-  const c = qs("driversContainer");
-  c.innerHTML = "";
+function renderDrivers(){
+  const c=qs("driversContainer"); c.innerHTML="";
   drivers.forEach((d,i)=>{
-    const div = document.createElement("div");
-    div.innerHTML = `<b>${d.name}</b> <button onclick="removeDriver(${i})">❌</button><br>`;
+    const div=document.createElement("div");
+    div.style.border="1px solid #ccc"; div.style.padding="10px"; div.style.marginBottom="10px";
+    div.innerHTML=`<b>${d.name}</b> <button onclick="removeDriver(${i})">❌</button><br>`;
     d.unavailable.forEach((u,j)=>{
-      div.innerHTML += `De <input type="time" value="${u.from}" onchange="updateUnavailable(${i},${j},'from',this.value)">
+      div.innerHTML+=`De <input type="time" value="${u.from}" onchange="updateUnavailable(${i},${j},'from',this.value)">
       à <input type="time" value="${u.to}" onchange="updateUnavailable(${i},${j},'to',this.value)">
       <button onclick="removeUnavailable(${i},${j})">❌</button><br>`;
     });
-    div.innerHTML += `<button onclick="addUnavailable(${i})">➕ Indispo</button>`;
-    div.style.border="1px solid #ccc"; div.style.padding="10px"; div.style.marginBottom="10px";
+    div.innerHTML+=`<button onclick="addUnavailable(${i})">➕ Indispo</button>`;
     c.appendChild(div);
   });
 }
 
-// -------------------- TEMPS --------------------
-
-function parseTimeToMinutes(t){const p=t.split(":").map(Number);return p[0]*60+p[1];}
-function formatTime(m){m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(Math.floor(m%60)).padStart(2,"0");}
-function intervalsOverlap(a,b,c,d){return a<d && c<b;}
-
-// -------------------- DISPO --------------------
-
-function isDriverAvailableForStint(driver, s, e) {
-  for (const u of driver.unavailable) {
-    const us = parseTimeToMinutes(u.from);
-    const ue = parseTimeToMinutes(u.to);
+// ----------------- Dispo -----------------
+function isDriverAvailableForStint(driver,s,e){
+  for(const u of driver.unavailable){
+    const us=parseTimeToMinutes(u.from);
+    const ue=parseTimeToMinutes(u.to);
     let ranges=[];
-    if (us<ue){ ranges.push([us,ue]); ranges.push([us+1440,ue+1440]); }
-    else if (us>ue){ ranges.push([us,ue+1440]); }
+    if(us<ue){ ranges.push([us,ue]); ranges.push([us+1440,ue+1440]); }
+    else if(us>ue){ ranges.push([us,ue+1440]); }
     else return false;
-
-    let ss=s, ee=e; if (ee<ss) ee+=1440;
-
-    for (const [rs,re] of ranges){
-      if (intervalsOverlap(ss,ee,rs,re)) return false;
+    let ss=s, ee=e; if(ee<ss) ee+=1440;
+    for(const [rs,re] of ranges){
+      if(intervalsOverlap(ss,ee,rs,re)) return false;
     }
   }
   return true;
 }
 
-// -------------------- GENERATION --------------------
-
-function generateBasePlan() {
-  if (drivers.length===0) return alert("Ajoute des pilotes");
+// ----------------- Génération -----------------
+function generateBasePlan(){
+  if(drivers.length===0) return alert("Ajoute des pilotes");
 
   const raceHours=+qs("raceHours").value;
   const stintMode=qs("stintMode").value;
@@ -245,24 +206,24 @@ function generateBasePlan() {
   let first=true;
   plan=[];
 
-  while (elapsed<raceHours*60-0.01){
-    if (!first){ current+=pitMin; elapsed+=pitMin; }
+  while(elapsed<raceHours*60-0.01){
+    if(!first){ current+=pitMin; elapsed+=pitMin; }
     first=false;
 
     let tries=0, sel=null;
     while(tries<drivers.length){
       const d=drivers[idx];
-      if (isDriverAvailableForStint(d,current,current+stintMin)){ sel=d; break; }
+      if(isDriverAvailableForStint(d,current,current+stintMin)){ sel=d; break; }
       idx=(idx+1)%drivers.length; tries++;
     }
-    if (!sel) return alert("Aucun pilote dispo");
+    if(!sel) return alert("Aucun pilote dispo");
 
     const rep=stintMode==="double"?2:1;
     for(let r=0;r<rep;r++){
-      if (elapsed>=raceHours*60) break;
+      if(elapsed>=raceHours*60) break;
       plan.push({start:current,end:current+stintMin,driver:sel.name,laps:lapsPerStint});
       current+=stintMin; elapsed+=stintMin;
-      if (r<rep-1){ current+=pitMin; elapsed+=pitMin; }
+      if(r<rep-1){ current+=pitMin; elapsed+=pitMin; }
     }
     idx=(drivers.indexOf(sel)+1)%drivers.length;
   }
@@ -271,22 +232,20 @@ function generateBasePlan() {
   renderPlan(); checkRules();
 }
 
-// -------------------- RENDER --------------------
-
+// ----------------- Rendu -----------------
 function renderPlan(){
   const tb=qs("planTable"); tb.innerHTML="";
   plan.forEach((r,i)=>{
     const tr=document.createElement("tr");
     const d=drivers.find(x=>x.name===r.driver);
-    if (d && !isDriverAvailableForStint(d,r.start,r.end)) tr.classList.add("bad");
+    if(d && !isDriverAvailableForStint(d,r.start,r.end)) tr.classList.add("bad");
     tr.innerHTML=`<td>${formatTime(r.start)}</td><td>${formatTime(r.end)}</td><td>${r.driver}</td><td>${r.laps}</td>
     <td><button onclick="openPopup(${i})">🔁</button></td>`;
     tb.appendChild(tr);
   });
 }
 
-// -------------------- POPUP CHOIX PILOTE --------------------
-
+// ----------------- Popup pilote -----------------
 function openPopup(i){
   changeIndex=i;
   const c=qs("popupButtons"); c.innerHTML="";
@@ -296,8 +255,8 @@ function openPopup(i){
     b.onclick=()=>{
       const row=plan[changeIndex];
       const ok=isDriverAvailableForStint(d,row.start,row.end);
-      if (!ok){
-        if (!confirm(`⚠️ ${d.name} est indisponible sur ce créneau. Forcer quand même ?`)) return;
+      if(!ok){
+        if(!confirm(`⚠️ ${d.name} est indisponible sur ce créneau. Forcer quand même ?`)) return;
       }
       row.driver=d.name;
       closePopup(); renderPlan(); checkRules();
@@ -308,12 +267,11 @@ function openPopup(i){
 }
 function closePopup(){ qs("popup").style.display="none"; }
 
-// -------------------- CHECK RULE --------------------
-
+// ----------------- Check règle -----------------
 function checkRules(){
   const c=qs("checks"); c.innerHTML="";
   const laps={}; drivers.forEach(d=>laps[d.name]=0);
-  plan.forEach(r=>{ if (laps[r.driver]!=null) laps[r.driver]+=r.laps; });
+  plan.forEach(r=>{ if(laps[r.driver]!=null) laps[r.driver]+=r.laps; });
 
   const raceHours=+qs("raceHours").value;
   const [lm,ls]=qs("lapTime").value.split(":").map(Number);
@@ -332,17 +290,13 @@ function checkRules(){
   });
 }
 
-// -------------------- SAUVEGARDE --------------------
-
-function openSavePopup(){
-  refreshSaveList();
-  qs("savePopup").style.display="flex";
-}
+// ----------------- Sauvegardes -----------------
+function openSavePopup(){ refreshSaveList(); qs("savePopup").style.display="flex"; }
 function closeSavePopup(){ qs("savePopup").style.display="none"; }
 
 function savePlan(){
   const name=qs("saveName").value.trim();
-  if (!name) return alert("Nom requis");
+  if(!name) return alert("Nom requis");
   const data={drivers,plan,settings:{
     startTime:qs("startTime").value,
     raceHours:qs("raceHours").value,
@@ -371,7 +325,7 @@ function loadPlan(name){
 }
 
 function deletePlan(name){
-  if (confirm("Supprimer "+name+" ?")){
+  if(confirm("Supprimer "+name+" ?")){
     localStorage.removeItem("plan_"+name);
     refreshSaveList();
   }
@@ -379,16 +333,18 @@ function deletePlan(name){
 
 function refreshSaveList(){
   const d=qs("saveList"); d.innerHTML="";
-  for (let k in localStorage){
-    if (k.startsWith("plan_")){
+  const keys=Object.keys(localStorage);
+  keys.forEach(k=>{
+    if(k.startsWith("plan_")){
       const name=k.replace("plan_","");
       const div=document.createElement("div");
       div.innerHTML=`<b>${name}</b> 
-      <button onclick="loadPlan('${name}')">📂</button>
-      <button onclick="deletePlan('${name}')">🗑️</button>`;
+        <button onclick="loadPlan('${name}')">📂</button>
+        <button onclick="deletePlan('${name}')">🗑️</button>`;
       d.appendChild(div);
     }
-  }
+  });
+  if(d.innerHTML==="") d.innerHTML="<i>Aucune sauvegarde</i>";
 }
 </script>
 
