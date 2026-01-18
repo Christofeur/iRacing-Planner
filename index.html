@@ -148,9 +148,9 @@ function renderDrivers() {
   });
 }
 
-// ---------------- LOGIQUE TEMPS ----------------
+// ---------------- TEMPS ----------------
 
-function parseTimeToSeconds(t) {
+function parseTimeToMinutes(t) {
   const parts = t.split(":").map(Number);
   return parts[0] * 60 + parts[1];
 }
@@ -162,22 +162,44 @@ function formatTime(totalMinutes) {
   return `${h}:${min}`;
 }
 
-// Vérifie si un pilote est dispo à une heure donnée (en minutes absolues)
-function isDriverAvailable(driver, timeMinutes) {
-  const t = ((timeMinutes % (24 * 60)) + (24 * 60)) % (24 * 60);
+// Test si deux intervalles se chevauchent
+function intervalsOverlap(aStart, aEnd, bStart, bEnd) {
+  return aStart < bEnd && bStart < aEnd;
+}
 
+// Vérifie si un pilote est dispo sur TOUT le relais
+function isDriverAvailableForStint(driver, stintStart, stintEnd) {
+  // On travaille en minutes modulo 24h, mais on peut tester sur 48h pour gérer minuit
   for (const u of driver.unavailable) {
     if (!u.from || !u.to) continue;
 
-    const from = parseTimeToSeconds(u.from) / 60;
-    const to = parseTimeToSeconds(u.to) / 60;
+    const uStart = parseTimeToMinutes(u.from);
+    const uEnd = parseTimeToMinutes(u.to);
 
-    if (from < to) {
-      // ex: 02:00 -> 05:00
-      if (t >= from && t < to) return false;
-    } else if (from > to) {
-      // ex: 22:00 -> 02:00 (passe minuit)
-      if (t >= from || t < to) return false;
+    // On déplie les cas qui passent minuit
+    let ranges = [];
+
+    if (uStart < uEnd) {
+      // ex: 14:00 -> 16:00
+      ranges.push([uStart, uEnd]);
+      ranges.push([uStart + 1440, uEnd + 1440]);
+    } else if (uStart > uEnd) {
+      // ex: 22:00 -> 02:00
+      ranges.push([uStart, uEnd + 1440]);
+    } else {
+      // égal = indispo toute la journée
+      return false;
+    }
+
+    // Tester le relais sur 0-48h
+    let sStart = stintStart;
+    let sEnd = stintEnd;
+    if (sEnd < sStart) sEnd += 1440;
+
+    for (const [rStart, rEnd] of ranges) {
+      if (intervalsOverlap(sStart, sEnd, rStart, rEnd)) {
+        return false;
+      }
     }
   }
 
@@ -200,11 +222,11 @@ function generatePlan() {
     return;
   }
 
-  const lapTimeSeconds = parseTimeToSeconds(lapTimeStr);
+  const lapTimeParts = lapTimeStr.split(":").map(Number);
+  const lapTimeSeconds = lapTimeParts[0] * 60 + lapTimeParts[1];
 
   const lapsPerStint = Math.floor(fuelCapacity / fuelPerLap);
-  const stintSeconds = lapsPerStint * lapTimeSeconds;
-  const stintMinutes = stintSeconds / 60;
+  const stintMinutes = (lapsPerStint * lapTimeSeconds) / 60;
   const pitMinutes = pitSeconds / 60;
 
   document.getElementById("stintInfo").innerText =
@@ -223,14 +245,24 @@ function generatePlan() {
   let firstStint = true;
 
   while (elapsed < totalMinutes - 0.01) {
+
+    // Ajouter pit avant le relais (sauf premier)
+    if (!firstStint) {
+      currentTime += pitMinutes;
+      elapsed += pitMinutes;
+    }
+    firstStint = false;
+
     let selectedDriver = null;
     let tries = 0;
 
-    // Cherche un pilote dispo
     while (tries < drivers.length) {
       const d = drivers[driverIndex];
 
-      if (isDriverAvailable(d, currentTime)) {
+      const stintStart = currentTime;
+      const stintEnd = currentTime + stintMinutes;
+
+      if (isDriverAvailableForStint(d, stintStart, stintEnd)) {
         selectedDriver = d;
         break;
       }
@@ -240,7 +272,7 @@ function generatePlan() {
     }
 
     if (!selectedDriver) {
-      alert("❌ Aucun pilote disponible à " + formatTime(currentTime));
+      alert("❌ Aucun pilote disponible pour le relais à " + formatTime(currentTime));
       return;
     }
 
@@ -248,12 +280,6 @@ function generatePlan() {
 
     for (let r = 0; r < repeats; r++) {
       if (elapsed >= totalMinutes - 0.01) break;
-
-      if (!firstStint) {
-        currentTime += pitMinutes;
-        elapsed += pitMinutes;
-      }
-      firstStint = false;
 
       const start = currentTime;
       const end = currentTime + stintMinutes;
@@ -268,6 +294,11 @@ function generatePlan() {
 
       currentTime = end;
       elapsed += stintMinutes;
+
+      if (r < repeats - 1) {
+        currentTime += pitMinutes;
+        elapsed += pitMinutes;
+      }
     }
 
     driverIndex = (drivers.indexOf(selectedDriver) + 1) % drivers.length;
