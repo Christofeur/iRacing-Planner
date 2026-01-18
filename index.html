@@ -61,7 +61,7 @@
 
 <br><br>
 
-<button onclick="generatePlan()">📋 Générer le planning</button>
+<button onclick="generatePlan()">📋 Générer le planning (auto-équilibré)</button>
 
 <p id="stintInfo" style="font-weight:bold;"></p>
 <p id="iracingRuleInfo" style="font-weight:bold;"></p>
@@ -205,7 +205,24 @@ function isDriverAvailableForStint(driver, stintStart, stintEnd) {
   return true;
 }
 
+// ---------------- AUTO EQUILIBRAGE ----------------
+
 function generatePlan() {
+  // On tente plusieurs générations jusqu'à conformité
+  const MAX_TRIES = 50;
+
+  for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
+    const result = generatePlanOnce(true);
+    if (result.ok) {
+      renderResult(result);
+      return;
+    }
+  }
+
+  alert("❌ Impossible d'équilibrer automatiquement le planning avec ces contraintes.");
+}
+
+function generatePlanOnce(autoBalance) {
   const raceHours = Number(document.getElementById("raceHours").value);
   const stintMode = document.getElementById("stintMode").value;
   const startTimeStr = document.getElementById("startTime").value;
@@ -215,11 +232,6 @@ function generatePlan() {
   const lapTimeStr = document.getElementById("lapTime").value;
 
   const pitSeconds = Number(document.getElementById("pitSeconds").value);
-
-  if (drivers.length === 0) {
-    alert("Ajoute au moins un pilote");
-    return;
-  }
 
   const [ltM, ltS] = lapTimeStr.split(":").map(Number);
   const lapTimeSeconds = ltM * 60 + ltS;
@@ -232,24 +244,16 @@ function generatePlan() {
   const totalLaps = Math.floor(totalMinutes / (lapTimeSeconds / 60));
   const minLapsPerDriver = Math.floor(totalLaps / drivers.length / 4);
 
-  document.getElementById("stintInfo").innerText =
-    `Relais = ${lapsPerStint} tours ≈ ${Math.round(stintMinutes)} min | Total ≈ ${totalLaps} tours`;
-
-  document.getElementById("iracingRuleInfo").innerText =
-    `Règle iRacing: minimum ${minLapsPerDriver} tours par pilote`;
-
   const [startH, startM] = startTimeStr.split(":").map(Number);
   let currentTime = startH * 60 + startM;
 
-  const table = document.getElementById("planTable");
-  table.innerHTML = "";
-
   let elapsed = 0;
-  let driverIndex = 0;
   let firstStint = true;
 
   const driverLapCount = {};
   drivers.forEach(d => driverLapCount[d.name] = 0);
+
+  const plan = [];
 
   while (elapsed < totalMinutes - 0.01) {
 
@@ -259,12 +263,14 @@ function generatePlan() {
     }
     firstStint = false;
 
+    // Trier pilotes par ceux qui ont le moins de tours
+    const sortedDrivers = [...drivers].sort((a, b) => {
+      return (driverLapCount[a.name] || 0) - (driverLapCount[b.name] || 0);
+    });
+
     let selectedDriver = null;
-    let tries = 0;
 
-    while (tries < drivers.length) {
-      const d = drivers[driverIndex];
-
+    for (const d of sortedDrivers) {
       const stintStart = currentTime;
       const stintEnd = currentTime + stintMinutes;
 
@@ -272,14 +278,10 @@ function generatePlan() {
         selectedDriver = d;
         break;
       }
-
-      driverIndex = (driverIndex + 1) % drivers.length;
-      tries++;
     }
 
     if (!selectedDriver) {
-      alert("❌ Aucun pilote disponible à " + formatTime(currentTime));
-      return;
+      return { ok: false };
     }
 
     const repeats = (stintMode === "double") ? 2 : 1;
@@ -290,14 +292,12 @@ function generatePlan() {
       const start = currentTime;
       const end = currentTime + stintMinutes;
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${formatTime(start)}</td>
-        <td>${formatTime(end)}</td>
-        <td>${selectedDriver.name}</td>
-        <td>${lapsPerStint}</td>
-      `;
-      table.appendChild(tr);
+      plan.push({
+        start,
+        end,
+        driver: selectedDriver.name,
+        laps: lapsPerStint
+      });
 
       driverLapCount[selectedDriver.name] += lapsPerStint;
 
@@ -309,35 +309,60 @@ function generatePlan() {
         elapsed += pitMinutes;
       }
     }
-
-    driverIndex = (drivers.indexOf(selectedDriver) + 1) % drivers.length;
   }
 
-  // ----------- Vérification règle iRacing -----------
+  // Vérification règle iRacing
+  let allOk = true;
+  for (const d of drivers) {
+    if ((driverLapCount[d.name] || 0) < minLapsPerDriver) {
+      allOk = false;
+    }
+  }
+
+  return {
+    ok: allOk,
+    plan,
+    driverLapCount,
+    minLapsPerDriver,
+    lapsPerStint,
+    stintMinutes,
+    totalLaps
+  };
+}
+
+function renderResult(result) {
+  const table = document.getElementById("planTable");
+  table.innerHTML = "";
+
+  for (const row of result.plan) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${formatTime(row.start)}</td>
+      <td>${formatTime(row.end)}</td>
+      <td>${row.driver}</td>
+      <td>${row.laps}</td>
+    `;
+    table.appendChild(tr);
+  }
+
+  document.getElementById("stintInfo").innerText =
+    `Relais = ${result.lapsPerStint} tours ≈ ${Math.round(result.stintMinutes)} min | Total ≈ ${result.totalLaps} tours`;
+
+  document.getElementById("iracingRuleInfo").innerText =
+    `Règle iRacing: minimum ${result.minLapsPerDriver} tours par pilote`;
 
   const checkDiv = document.getElementById("iracingCheck");
   checkDiv.innerHTML = "";
 
-  let allOk = true;
-
   for (const d of drivers) {
-    const laps = driverLapCount[d.name] || 0;
-    const ok = laps >= minLapsPerDriver;
+    const laps = result.driverLapCount[d.name] || 0;
+    const ok = laps >= result.minLapsPerDriver;
 
     const line = document.createElement("div");
     line.innerHTML = `${d.name} : ${laps} tours ${ok ? "✅" : "❌"}`;
-    if (!ok) {
-      line.style.color = "red";
-      allOk = false;
-    } else {
-      line.style.color = "green";
-    }
+    line.style.color = ok ? "green" : "red";
 
     checkDiv.appendChild(line);
-  }
-
-  if (!allOk) {
-    alert("⚠️ Attention : la règle iRacing n'est PAS respectée pour tous les pilotes !");
   }
 }
 </script>
