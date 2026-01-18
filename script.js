@@ -1,104 +1,92 @@
-let drivers = [];
-
-function addDriver() {
-  const input = document.getElementById("driverName");
-  const name = input.value.trim();
-  if (name === "") return;
-
-  drivers.push({
-    name: name,
-    total: 0
-  });
-
-  input.value = "";
-  renderDrivers();
+function parseTimeToSeconds(t) {
+  const parts = t.split(":").map(Number);
+  return parts[0] * 60 + parts[1];
 }
 
-function removeDriver(index) {
-  drivers.splice(index, 1);
-  renderDrivers();
-}
-
-function renderDrivers() {
-  const list = document.getElementById("driverList");
-  list.innerHTML = "";
-  drivers.forEach((d, i) => {
-    const li = document.createElement("li");
-    li.innerHTML = `${d.name} <button onclick="removeDriver(${i})">🗑️</button>`;
-    list.appendChild(li);
-  });
+function formatTime(min) {
+  const h = Math.floor(min / 60).toString().padStart(2, "0");
+  const m = Math.floor(min % 60).toString().padStart(2, "0");
+  return `${h}:${m}`;
 }
 
 function generatePlan() {
-  if (drivers.length === 0) {
-    alert("Ajoute au moins un pilote !");
-    return;
-  }
-
-  const raceHours = Number(document.getElementById("raceHours").value);
-  const stintMinutes = Number(document.getElementById("stintMinutes").value);
-  const pitSeconds = Number(document.getElementById("pitMinutes").value);
-
   const startTimeStr = document.getElementById("startTime").value;
+  const raceHours = parseFloat(document.getElementById("raceDuration").value);
+  const pitSeconds = parseFloat(document.getElementById("pitSeconds").value);
+
+  const fuelCapacity = parseFloat(document.getElementById("fuelCapacity").value);
+  const fuelPerLap = parseFloat(document.getElementById("fuelPerLap").value);
+  const lapTimeStr = document.getElementById("lapTime").value;
+
   if (!startTimeStr) {
-    alert("Entre une heure de départ !");
+    alert("Heure de départ invalide");
     return;
   }
 
-  const [startHour, startMin] = startTimeStr.split(":").map(Number);
-  const baseStartMinutes = startHour * 60 + startMin;
+  const lapTimeSeconds = parseTimeToSeconds(lapTimeStr);
 
-  const totalMinutes = raceHours * 60;
+  const lapsPerStint = Math.floor(fuelCapacity / fuelPerLap);
+  const stintSeconds = lapsPerStint * lapTimeSeconds;
+
+  const stintMinutes = stintSeconds / 60;
   const pitMinutes = pitSeconds / 60;
 
-  drivers.forEach(d => d.total = 0);
+  document.getElementById("stintInfo").innerText =
+    `Relais: ${lapsPerStint} tours ≈ ${Math.round(stintMinutes)} min`;
+
+  const drivers = [];
+  document.querySelectorAll("#driversList li").forEach(li => {
+    drivers.push({ name: li.firstChild.textContent.trim(), total: 0 });
+  });
+
+  if (drivers.length === 0) {
+    alert("Ajoute des pilotes");
+    return;
+  }
+
+  const [startH, startM] = startTimeStr.split(":").map(Number);
+  let currentTime = startH * 60 + startM;
+  const totalMinutes = raceHours * 60;
 
   const table = document.getElementById("planTable");
   table.innerHTML = "";
 
-  let currentTime = 0;
+  let elapsed = 0;
 
-  while (currentTime < totalMinutes) {
+  while (elapsed < totalMinutes - 0.1) {
     drivers.sort((a, b) => a.total - b.total);
     const driver = drivers[0];
 
     const start = currentTime;
-    const end = Math.min(currentTime + stintMinutes, totalMinutes);
-    const duration = end - start;
+    const end = currentTime + stintMinutes;
 
-    addRow(
-      baseStartMinutes + start,
-      baseStartMinutes + end,
-      driver.name
-    );
+    addRow(start, end, driver.name);
 
-    driver.total += duration;
-    currentTime = end;
-
-    if (currentTime < totalMinutes) {
-      currentTime += pitMinutes;
-    }
+    driver.total += stintMinutes;
+    currentTime = end + pitMinutes;
+    elapsed = currentTime - (startH * 60 + startM);
   }
 
-  renderDrivers();
+  renderDrivers(drivers);
 }
 
 function addRow(startMin, endMin, driver) {
   const table = document.getElementById("planTable");
   const tr = document.createElement("tr");
-
   tr.innerHTML = `
     <td>${formatTime(startMin)}</td>
     <td>${formatTime(endMin)}</td>
     <td>${driver}</td>
   `;
-
   table.appendChild(tr);
 }
 
-function formatTime(min) {
-  min = ((min % (24 * 60)) + (24 * 60)) % (24 * 60); // wrap 24h
-  const h = Math.floor(min / 60).toString().padStart(2, "0");
-  const m = Math.floor(min % 60).toString().padStart(2, "0");
-  return `${h}:${m}`;
+function renderDrivers(drivers) {
+  const ul = document.getElementById("driversList");
+  ul.innerHTML = "";
+  drivers.forEach(d => {
+    const li = document.createElement("li");
+    li.textContent = `${d.name} (${Math.round(d.total)} min)`;
+    ul.appendChild(li);
+  });
 }
