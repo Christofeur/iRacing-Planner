@@ -32,6 +32,14 @@
   <label>Temps au tour moyen (mm:ss)</label>
   <input type="text" id="lapTime" value="01:45">
 
+  <hr>
+
+  <label>Type de relais</label>
+  <select id="stintMode">
+    <option value="single">Simple relais uniquement</option>
+    <option value="double">Double relais autorisés</option>
+  </select>
+
 </div>
 
 <div class="box">
@@ -40,16 +48,7 @@
   <input type="text" id="driverName" placeholder="Nom du pilote">
   <button id="addDriverBtn">➕ Ajouter</button>
 
-  <table style="width:100%; margin-top:10px;">
-    <thead>
-      <tr>
-        <th>Pilote</th>
-        <th>Relais</th>
-        <th>Suppr.</th>
-      </tr>
-    </thead>
-    <tbody id="driversTable"></tbody>
-  </table>
+  <ul id="driversList"></ul>
 </div>
 
 <button class="mainBtn" id="generateBtn">📋 Générer le plan</button>
