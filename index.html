@@ -1,327 +1,254 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>iRacing Endurance Planner</title>
-  <style>
-    body { font-family: Arial, sans-serif; }
-    table { border-collapse: collapse; }
-    td, th { padding: 6px 10px; }
-    .bad { background-color: #ffb3b3; }
-
-    #popup, #savePopup {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      display: none;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .popupContent {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      min-width: 300px;
-      text-align: center;
-    }
-
-    .popupContent button {
-      display: block;
-      width: 100%;
-      margin: 5px 0;
-      padding: 8px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>iRacing Endurance Planner</title>
+<style>
+body{font-family:Arial;background:#0b1320;color:#eee;padding:20px}
+input,select,button{margin:3px;padding:5px}
+table{border-collapse:collapse;margin-top:10px}
+td,th{border:1px solid #555;padding:6px}
+.bad{background:#802020}
+.popupBG{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center}
+.popup{background:#111;padding:20px;border-radius:10px;min-width:300px}
+.popup button{width:100%;margin-top:5px}
+</style>
 </head>
 <body>
 
 <h1>iRacing Endurance Planner</h1>
 
 <h2>Pilotes</h2>
-<input type="text" id="driverName" placeholder="Nom du pilote">
+<input id="driverName" placeholder="Nom du pilote">
 <button onclick="addDriver()">➕ Ajouter</button>
-<div id="driversContainer"></div>
-
-<hr>
+<div id="drivers"></div>
 
 <h2>Course</h2>
-<label>Heure de départ</label>
-<input type="time" id="startTime" value="13:00"><br><br>
-
-<label>Durée de la course (heures)</label>
-<input type="number" id="raceHours" value="6"><br><br>
-
-<label>Type de relais</label>
+Heure départ <input type="time" id="startTime" value="13:00"><br>
+Durée (h) <input type="number" id="raceHours" value="6"><br>
+Type relais 
 <select id="stintMode">
-  <option value="single">Simple relais</option>
-  <option value="double">Double relais</option>
+<option value="single">Simple</option>
+<option value="double">Double</option>
 </select>
 
-<hr>
-
 <h2>Carburant</h2>
-<label>Capacité réservoir (L)</label>
-<input type="number" id="fuelCapacity" value="120"><br><br>
-
-<label>Consommation par tour (L)</label>
-<input type="number" id="fuelPerLap" value="3.2" step="0.01"><br><br>
-
-<label>Temps au tour moyen (mm:ss)</label>
-<input type="text" id="lapTime" value="01:45">
-
-<hr>
+Réservoir (L) <input type="number" id="fuelCap" value="120"><br>
+Conso/tour (L) <input type="number" id="fuelLap" value="3.2" step="0.01"><br>
+Temps au tour (mm:ss) <input id="lapTime" value="01:45">
 
 <h2>Pit</h2>
-<label>Temps de pit (secondes)</label>
-<input type="number" id="pitSeconds" value="40"><br><br>
+Temps pit (sec) <input type="number" id="pitSec" value="40">
 
-<button onclick="generateBasePlan()">📋 Générer le planning</button>
-<button onclick="openSavePopup()">💾 Sauvegarder / Charger</button>
+<br><br>
+<button onclick="generatePlan()">📋 Générer le planning</button>
+<button onclick="openSave()">💾 Sauvegarder / Charger</button>
 
-<p id="stintInfo" style="font-weight:bold;"></p>
-<p id="iracingRuleInfo" style="font-weight:bold;"></p>
-
-<hr>
+<p id="info"></p>
 
 <h2>Planning</h2>
-<table border="1">
-  <thead>
-    <tr>
-      <th>Début</th>
-      <th>Fin</th>
-      <th>Pilote</th>
-      <th>Tours</th>
-      <th>Action</th>
-    </tr>
-  </thead>
-  <tbody id="planTable"></tbody>
+<table>
+<thead><tr><th>Début</th><th>Fin</th><th>Pilote</th><th>Tours</th><th></th></tr></thead>
+<tbody id="planTable"></tbody>
 </table>
 
-<hr>
-
-<h2>Contrôles</h2>
+<h2>Règle iRacing</h2>
 <div id="checks"></div>
 
-<!-- Popup choix pilote -->
-<div id="popup">
-  <div class="popupContent">
-    <h3>Choisir le pilote</h3>
-    <div id="popupButtons"></div>
-    <button onclick="closePopup()">Annuler</button>
+<!-- POPUP PILOTES -->
+<div class="popupBG" id="pilotPopup">
+  <div class="popup">
+    <h3>Choisir pilote</h3>
+    <div id="pilotButtons"></div>
+    <button onclick="closePilot()">Annuler</button>
   </div>
 </div>
 
-<!-- Popup sauvegarde -->
-<div id="savePopup">
-  <div class="popupContent">
+<!-- POPUP SAVE -->
+<div class="popupBG" id="savePopup">
+  <div class="popup">
     <h3>Sauvegardes</h3>
-    <input type="text" id="saveName" placeholder="Nom du planning">
+    <input id="saveName" placeholder="Nom du planning">
     <button onclick="savePlan()">💾 Sauvegarder</button>
     <hr>
     <div id="saveList"></div>
-    <button onclick="closeSavePopup()">Fermer</button>
+    <button onclick="closeSave()">Fermer</button>
   </div>
 </div>
 
 <script>
-let drivers = [];
-let plan = [];
-let changeIndex = null;
+let drivers=[];
+let plan=[];
+let editIndex=null;
 
-function qs(id){ return document.getElementById(id); }
+function $(id){return document.getElementById(id);}
 
-// ----------------- Temps -----------------
-function parseTimeToMinutes(t){ const p=t.split(":").map(Number); return p[0]*60+p[1]; }
-function formatTime(m){ m=((m%1440)+1440)%1440; return String(Math.floor(m/60)).padStart(2,"0")+":"+String(Math.floor(m%60)).padStart(2,"0"); }
-function intervalsOverlap(a,b,c,d){ return a<d && c<b; }
-
-// ----------------- Pilotes -----------------
 function addDriver(){
-  const name=qs("driverName").value.trim();
-  if(!name) return;
-  drivers.push({name, unavailable:[]});
-  qs("driverName").value="";
+  let n=$("driverName").value.trim();
+  if(!n) return;
+  drivers.push({name:n,unavail:[]});
+  $("driverName").value="";
   renderDrivers();
 }
 
-function removeDriver(i){ drivers.splice(i,1); renderDrivers(); }
-
-function addUnavailable(i){ drivers[i].unavailable.push({from:"00:00",to:"00:00"}); renderDrivers(); }
-function updateUnavailable(i,j,f,v){ drivers[i].unavailable[j][f]=v; }
-function removeUnavailable(i,j){ drivers[i].unavailable.splice(j,1); renderDrivers(); }
-
 function renderDrivers(){
-  const c=qs("driversContainer"); c.innerHTML="";
-  drivers.forEach((d,i)=>{
-    const div=document.createElement("div");
-    div.style.border="1px solid #ccc"; div.style.padding="10px"; div.style.marginBottom="10px";
-    div.innerHTML=`<b>${d.name}</b> <button onclick="removeDriver(${i})">❌</button><br>`;
-    d.unavailable.forEach((u,j)=>{
-      div.innerHTML+=`De <input type="time" value="${u.from}" onchange="updateUnavailable(${i},${j},'from',this.value)">
-      à <input type="time" value="${u.to}" onchange="updateUnavailable(${i},${j},'to',this.value)">
-      <button onclick="removeUnavailable(${i},${j})">❌</button><br>`;
+  let d=$("drivers"); d.innerHTML="";
+  drivers.forEach((p,i)=>{
+    let div=document.createElement("div");
+    div.innerHTML=`<b>${p.name}</b> <button onclick="drivers.splice(${i},1);renderDrivers()">❌</button>
+    <button onclick="p.unavail.push({from:'00:00',to:'00:00'});renderDrivers()">+ Indispo</button>`;
+    p.unavail.forEach((u,j)=>{
+      div.innerHTML+=`<br>De <input type="time" value="${u.from}" onchange="drivers[${i}].unavail[${j}].from=this.value">
+      à <input type="time" value="${u.to}" onchange="drivers[${i}].unavail[${j}].to=this.value}">
+      <button onclick="drivers[${i}].unavail.splice(${j},1);renderDrivers()">❌</button>`;
     });
-    div.innerHTML+=`<button onclick="addUnavailable(${i})">➕ Indispo</button>`;
-    c.appendChild(div);
+    d.appendChild(div);
   });
 }
 
-// ----------------- Dispo -----------------
-function isDriverAvailableForStint(driver,s,e){
-  for(const u of driver.unavailable){
-    const us=parseTimeToMinutes(u.from);
-    const ue=parseTimeToMinutes(u.to);
-    let ranges=[];
-    if(us<ue){ ranges.push([us,ue]); ranges.push([us+1440,ue+1440]); }
-    else if(us>ue){ ranges.push([us,ue+1440]); }
-    else return false;
+function parseTime(t){let[a,b]=t.split(":").map(Number);return a*60+b;}
+function fmt(m){m=(m%1440+1440)%1440;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");}
+
+function available(p,s,e){
+  for(let u of p.unavail){
+    let a=parseTime(u.from), b=parseTime(u.to);
     let ss=s, ee=e; if(ee<ss) ee+=1440;
-    for(const [rs,re] of ranges){
-      if(intervalsOverlap(ss,ee,rs,re)) return false;
+    let ranges=[];
+    if(a<b){ranges.push([a,b]);ranges.push([a+1440,b+1440]);}
+    else if(a>b){ranges.push([a,b+1440]);}
+    else return false;
+    for(let r of ranges){
+      if(ss<r[1] && r[0]<ee) return false;
     }
   }
   return true;
 }
 
-// ----------------- Génération -----------------
-function generateBasePlan(){
-  if(drivers.length===0) return alert("Ajoute des pilotes");
+function generatePlan(){
+  if(drivers.length==0) return alert("Ajoute des pilotes");
+  let [sh,sm]=$("startTime").value.split(":").map(Number);
+  let start=sh*60+sm;
+  let raceH=+$("raceHours").value;
+  let fuelCap=+$("fuelCap").value;
+  let fuelLap=+$("fuelLap").value;
+  let [lm,ls]=$("lapTime").value.split(":").map(Number);
+  let lapSec=lm*60+ls;
+  let pit=$("pitSec").value/60;
+  let laps=Math.floor(fuelCap/fuelLap);
+  let stintMin=laps*lapSec/60;
 
-  const raceHours=+qs("raceHours").value;
-  const stintMode=qs("stintMode").value;
-  const [sh,sm]=qs("startTime").value.split(":").map(Number);
-  const fuelCap=+qs("fuelCapacity").value;
-  const fuelLap=+qs("fuelPerLap").value;
-  const [lm,ls]=qs("lapTime").value.split(":").map(Number);
-  const pitMin=+qs("pitSeconds").value/60;
+  $("info").textContent=`Relais = ${laps} tours ≈ ${Math.round(stintMin)} min`;
 
-  const lapSec=lm*60+ls;
-  const lapsPerStint=Math.floor(fuelCap/fuelLap);
-  const stintMin=(lapsPerStint*lapSec)/60;
-
-  let current=sh*60+sm;
+  plan=[];
+  let t=start;
   let elapsed=0;
   let idx=0;
   let first=true;
-  plan=[];
 
-  while(elapsed<raceHours*60-0.01){
-    if(!first){ current+=pitMin; elapsed+=pitMin; }
+  while(elapsed<raceH*60-0.1){
+    if(!first){t+=pit; elapsed+=pit;}
     first=false;
 
-    let tries=0, sel=null;
-    while(tries<drivers.length){
-      const d=drivers[idx];
-      if(isDriverAvailableForStint(d,current,current+stintMin)){ sel=d; break; }
-      idx=(idx+1)%drivers.length; tries++;
-    }
-    if(!sel) return alert("Aucun pilote dispo");
+    let p=drivers[idx];
+    let rep=$("stintMode").value=="double"?2:1;
 
-    const rep=stintMode==="double"?2:1;
     for(let r=0;r<rep;r++){
-      if(elapsed>=raceHours*60) break;
-      plan.push({start:current,end:current+stintMin,driver:sel.name,laps:lapsPerStint});
-      current+=stintMin; elapsed+=stintMin;
-      if(r<rep-1){ current+=pitMin; elapsed+=pitMin; }
+      if(elapsed>=raceH*60) break;
+      plan.push({start:t,end:t+stintMin,driver:p.name,laps:laps});
+      t+=stintMin; elapsed+=stintMin;
+      if(r<rep-1){t+=pit; elapsed+=pit;}
     }
-    idx=(drivers.indexOf(sel)+1)%drivers.length;
+    idx=(idx+1)%drivers.length;
   }
 
-  qs("stintInfo").textContent=`Relais = ${lapsPerStint} tours ≈ ${Math.round(stintMin)} min`;
   renderPlan(); checkRules();
 }
 
-// ----------------- Rendu -----------------
 function renderPlan(){
-  const tb=qs("planTable"); tb.innerHTML="";
+  let tb=$("planTable"); tb.innerHTML="";
   plan.forEach((r,i)=>{
-    const tr=document.createElement("tr");
-    const d=drivers.find(x=>x.name===r.driver);
-    if(d && !isDriverAvailableForStint(d,r.start,r.end)) tr.classList.add("bad");
-    tr.innerHTML=`<td>${formatTime(r.start)}</td><td>${formatTime(r.end)}</td><td>${r.driver}</td><td>${r.laps}</td>
-    <td><button onclick="openPopup(${i})">🔁</button></td>`;
+    let tr=document.createElement("tr");
+    let p=drivers.find(d=>d.name==r.driver);
+    if(p && !available(p,r.start,r.end)) tr.classList.add("bad");
+    tr.innerHTML=`<td>${fmt(r.start)}</td><td>${fmt(r.end)}</td><td>${r.driver}</td><td>${r.laps}</td>
+    <td><button onclick="openPilot(${i})">🔁</button></td>`;
     tb.appendChild(tr);
   });
 }
 
-// ----------------- Popup pilote -----------------
-function openPopup(i){
-  changeIndex=i;
-  const c=qs("popupButtons"); c.innerHTML="";
-  drivers.forEach(d=>{
-    const b=document.createElement("button");
-    b.textContent=d.name;
+function openPilot(i){
+  editIndex=i;
+  let d=$("pilotButtons"); d.innerHTML="";
+  drivers.forEach(p=>{
+    let b=document.createElement("button");
+    b.textContent=p.name;
     b.onclick=()=>{
-      const row=plan[changeIndex];
-      const ok=isDriverAvailableForStint(d,row.start,row.end);
-      if(!ok){
-        if(!confirm(`⚠️ ${d.name} est indisponible sur ce créneau. Forcer quand même ?`)) return;
+      let r=plan[editIndex];
+      if(!available(p,r.start,r.end)){
+        if(!confirm("Pilote indisponible sur ce créneau. Forcer ?")) return;
       }
-      row.driver=d.name;
-      closePopup(); renderPlan(); checkRules();
+      r.driver=p.name;
+      closePilot(); renderPlan(); checkRules();
     };
-    c.appendChild(b);
+    d.appendChild(b);
   });
-  qs("popup").style.display="flex";
+  $("pilotPopup").style.display="flex";
 }
-function closePopup(){ qs("popup").style.display="none"; }
+function closePilot(){$("pilotPopup").style.display="none";}
 
-// ----------------- Check règle -----------------
 function checkRules(){
-  const c=qs("checks"); c.innerHTML="";
-  const laps={}; drivers.forEach(d=>laps[d.name]=0);
-  plan.forEach(r=>{ if(laps[r.driver]!=null) laps[r.driver]+=r.laps; });
+  let c=$("checks"); c.innerHTML="";
+  let count={}; drivers.forEach(d=>count[d.name]=0);
+  plan.forEach(r=>count[r.driver]+=r.laps);
 
-  const raceHours=+qs("raceHours").value;
-  const [lm,ls]=qs("lapTime").value.split(":").map(Number);
-  const lapSec=lm*60+ls;
-  const totalLaps=Math.floor((raceHours*60)/(lapSec/60));
-  const minLaps=Math.floor(totalLaps/drivers.length/4);
-
-  qs("iracingRuleInfo").textContent=`Règle iRacing: minimum ${minLaps} tours par pilote`;
+  let raceH=+$("raceHours").value;
+  let [lm,ls]=$("lapTime").value.split(":").map(Number);
+  let lapSec=lm*60+ls;
+  let total=Math.floor((raceH*3600)/lapSec);
+  let min=Math.floor(total/drivers.length/4);
 
   drivers.forEach(d=>{
-    const ok=laps[d.name]>=minLaps;
-    const div=document.createElement("div");
-    div.textContent=`${d.name} : ${laps[d.name]} tours ${ok?"✅":"❌"}`;
-    div.style.color=ok?"green":"red";
+    let ok=count[d.name]>=min;
+    let div=document.createElement("div");
+    div.textContent=`${d.name} : ${count[d.name]} tours (min ${min})`;
+    div.style.color=ok?"lightgreen":"red";
     c.appendChild(div);
   });
 }
 
-// ----------------- Sauvegardes -----------------
-function openSavePopup(){ refreshSaveList(); qs("savePopup").style.display="flex"; }
-function closeSavePopup(){ qs("savePopup").style.display="none"; }
+function openSave(){ refreshSaveList(); $("savePopup").style.display="flex"; }
+function closeSave(){ $("savePopup").style.display="none"; }
 
 function savePlan(){
-  const name=qs("saveName").value.trim();
+  let name=$("saveName").value.trim();
   if(!name) return alert("Nom requis");
-  const data={drivers,plan,settings:{
-    startTime:qs("startTime").value,
-    raceHours:qs("raceHours").value,
-    stintMode:qs("stintMode").value,
-    fuelCapacity:qs("fuelCapacity").value,
-    fuelPerLap:qs("fuelPerLap").value,
-    lapTime:qs("lapTime").value,
-    pitSeconds:qs("pitSeconds").value
+  let data={drivers,plan,settings:{
+    startTime:$("startTime").value,
+    raceHours:$("raceHours").value,
+    stintMode:$("stintMode").value,
+    fuelCap:$("fuelCap").value,
+    fuelLap:$("fuelLap").value,
+    lapTime:$("lapTime").value,
+    pitSec:$("pitSec").value
   }};
   localStorage.setItem("plan_"+name, JSON.stringify(data));
+  alert("Sauvegarde réussie");
   refreshSaveList();
 }
 
 function loadPlan(name){
-  const data=JSON.parse(localStorage.getItem("plan_"+name));
+  let data=JSON.parse(localStorage.getItem("plan_"+name));
   drivers=data.drivers; plan=data.plan;
-  const s=data.settings;
-  qs("startTime").value=s.startTime;
-  qs("raceHours").value=s.raceHours;
-  qs("stintMode").value=s.stintMode;
-  qs("fuelCapacity").value=s.fuelCapacity;
-  qs("fuelPerLap").value=s.fuelPerLap;
-  qs("lapTime").value=s.lapTime;
-  qs("pitSeconds").value=s.pitSeconds;
+  let s=data.settings;
+  $("startTime").value=s.startTime;
+  $("raceHours").value=s.raceHours;
+  $("stintMode").value=s.stintMode;
+  $("fuelCap").value=s.fuelCap;
+  $("fuelLap").value=s.fuelLap;
+  $("lapTime").value=s.lapTime;
+  $("pitSec").value=s.pitSec;
   renderDrivers(); renderPlan(); checkRules();
+  alert("Planning chargé");
 }
 
 function deletePlan(name){
@@ -332,21 +259,20 @@ function deletePlan(name){
 }
 
 function refreshSaveList(){
-  const d=qs("saveList"); d.innerHTML="";
-  const keys=Object.keys(localStorage);
+  let d=$("saveList"); d.innerHTML="";
+  let keys=Object.keys(localStorage);
   keys.forEach(k=>{
     if(k.startsWith("plan_")){
-      const name=k.replace("plan_","");
-      const div=document.createElement("div");
-      div.innerHTML=`<b>${name}</b> 
-        <button onclick="loadPlan('${name}')">📂</button>
-        <button onclick="deletePlan('${name}')">🗑️</button>`;
+      let n=k.replace("plan_","");
+      let div=document.createElement("div");
+      div.innerHTML=`<b>${n}</b>
+      <button onclick="loadPlan('${n}')">📂</button>
+      <button onclick="deletePlan('${n}')">🗑️</button>`;
       d.appendChild(div);
     }
   });
-  if(d.innerHTML==="") d.innerHTML="<i>Aucune sauvegarde</i>";
+  if(d.innerHTML=="") d.innerHTML="<i>Aucune sauvegarde</i>";
 }
 </script>
-
 </body>
 </html>
