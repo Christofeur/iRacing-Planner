@@ -41,11 +41,17 @@ function parseTimeToSeconds(t) {
   return parts[0] * 60 + parts[1];
 }
 
-function formatTime(min) {
-  min = ((min % (24 * 60)) + (24 * 60)) % (24 * 60);
-  const h = Math.floor(min / 60).toString().padStart(2, "0");
-  const m = Math.floor(min % 60).toString().padStart(2, "0");
-  return `${h}:${m}`;
+// ✅ Fonction corrigée : wrap sur 24h
+function formatTime(totalMinutes) {
+  let m = Math.round(totalMinutes);
+
+  // wrap 24h
+  m = ((m % (24 * 60)) + (24 * 60)) % (24 * 60);
+
+  const h = Math.floor(m / 60).toString().padStart(2, "0");
+  const min = Math.floor(m % 60).toString().padStart(2, "0");
+
+  return `${h}:${min}`;
 }
 
 function generatePlan() {
@@ -61,6 +67,11 @@ function generatePlan() {
   const fuelCapacity = parseFloat(document.getElementById("fuelCapacity").value);
   const fuelPerLap = parseFloat(document.getElementById("fuelPerLap").value);
   const lapTimeStr = document.getElementById("lapTime").value;
+
+  if (!startTimeStr) {
+    alert("Heure de départ invalide");
+    return;
+  }
 
   const lapTimeSeconds = parseTimeToSeconds(lapTimeStr);
 
@@ -86,6 +97,7 @@ function generatePlan() {
   const totalMinutes = raceHours * 60;
 
   while (elapsed < totalMinutes - 0.01) {
+    // Pilote qui a le moins roulé
     drivers.sort((a, b) => a.total - b.total);
     const driver = drivers[0];
 
