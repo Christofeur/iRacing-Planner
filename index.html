@@ -55,6 +55,7 @@ Temps de pit (secondes) <input type="number" id="pitSec" value="40">
 
 <select id="loadSelect"></select>
 <button onclick="loadSelectedPlan()">📂 Charger</button>
+<button onclick="deleteSelectedPlan()">🗑️ Supprimer</button>
 </div>
 
 <p id="info"></p>
@@ -360,6 +361,23 @@ function loadSelectedPlan(){
   checkRules();
 
   alert("Chargement OK");
+}
+
+// ---------- Suppression ----------
+function deleteSelectedPlan(){
+  let name = $("loadSelect").value;
+  if(!name){
+    alert("Aucune sauvegarde sélectionnée");
+    return;
+  }
+
+  if(!confirm("Supprimer définitivement le planning \"" + name + "\" ?")){
+    return;
+  }
+
+  localStorage.removeItem("iracing_plan_" + name);
+  refreshLoadList();
+  alert("Supprimé");
 }
 
 // init
