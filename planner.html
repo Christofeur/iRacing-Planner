@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>iRacing Endurance Planner </title>
+<title>iRacing Endurance Planner (Stable + SOF)</title>
 <style>
 body { font-family: Arial, sans-serif; padding:20px; background:#111; color:#eee; }
 input, select, button { margin:3px; padding:5px; }
@@ -52,11 +52,11 @@ td, th { border:1px solid #555; padding:6px; }
 </style>
 </head>
 <body>
+
 <div style="margin-bottom:15px;">
   <button onclick="window.location.href='index.html'">🏠 Accueil</button>
   <button onclick="window.location.href='live.html'">🎮 Live Manager</button>
 </div>
-<hr>
 
 <h1>iRacing Endurance Planner</h1>
 
@@ -92,6 +92,7 @@ Type relais
 Capacité réservoir (L) <input type="number" id="fuelCap" value="120"><br>
 Conso par tour (L) <input type="number" id="fuelLap" value="3.2" step="0.01"><br>
 Temps au tour (mm:ss) <input id="lapTime" value="01:45"><br>
+Temps de pit (secondes) <input type="number" id="pitSec" value="40">
 </div>
 
 <div class="block">
@@ -230,50 +231,33 @@ function generatePlan(){
   let stintSec=laps*lapSec;
   $("info").textContent=`Relais = ${laps} tours ≈ ${Math.round(stintSec/60)} min`;
 
-state.plan = [];
+  state.plan=[];
+  let t=start, elapsed=0, idx=0, first=true;
 
-let currentTime = start;
-let raceEndTime = start + raceHours * 3600;
+  while(elapsed<raceHours*3600-1){
+    if(!first){t+=pitSec; elapsed+=pitSec;}
+    first=false;
 
-// Sécurité : éviter division par zéro / valeurs invalides
-if(!stintSec || stintSec <= 0 || !isFinite(stintSec)){
-  alert("Erreur: durée de relais invalide. Vérifie carburant / conso / temps au tour.");
-  return;
-}
+    let found=null, tries=0;
+    while(tries<state.drivers.length){
+      let p=state.drivers[idx];
+      if(isAvailable(p,t,t+stintSec)){found=p; break;}
+      idx=(idx+1)%state.drivers.length; tries++;
+    }
+    if(!found) return alert("Aucun pilote disponible à "+fmt(t));
 
-// Sécurité : éviter boucle infinie
-let safety = 0;
-
-while(currentTime < raceEndTime && safety < 1000){
-
-  let startRel = currentTime;
-  let endRel = startRel + stintSec;
-
-  // On coupe le dernier relais s'il dépasse la fin de course
-  if(endRel > raceEndTime){
-    endRel = raceEndTime;
+    let rep=$("stintMode").value==="double"?2:1;
+    for(let r=0;r<rep;r++){
+      if(elapsed>=raceHours*3600) break;
+      state.plan.push({start:t,end:t+stintSec,driver:found.name,laps});
+      t+=stintSec; elapsed+=stintSec;
+      if(r<rep-1){t+=pitSec; elapsed+=pitSec;}
+    }
+    idx=(idx+1)%state.drivers.length;
   }
 
-  state.plan.push({
-    start: startRel,
-    end: endRel,
-    driver: state.drivers[idx].name,
-    laps
-  });
-
-  // Avancer le temps
-  currentTime = endRel;
-
-  // Pilote suivant
-  idx = (idx + 1) % state.drivers.length;
-
-  safety++;
+  updateAll();
 }
-
-if(safety >= 1000){
-  alert("Erreur interne: boucle infinie détectée dans la génération du planning.");
-}
-
 
 // ---------- Affichage ----------
 function renderPlan(){
@@ -416,8 +400,3 @@ updateSOF();
 
 </body>
 </html>
-
-
-
-
-
