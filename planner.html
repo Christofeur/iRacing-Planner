@@ -2,100 +2,131 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Ascendia Racing — Endurance Planner</title>
-<link rel="stylesheet" href="ascendia.css">
-</head>
+<title>iRacing Endurance Planner (Stable + SOF)</title>
+<style>
+body { font-family: Arial, sans-serif; padding:20px; background:#111; color:#eee; }
+input, select, button { margin:3px; padding:5px; }
+table { border-collapse: collapse; margin-top:10px; }
+td, th { border:1px solid #555; padding:6px; }
+.bad { background:#802020; }
+.block { border:1px solid #444; padding:10px; margin-bottom:10px; }
 
+#ruleBanner {
+  display:none;
+  background:#a00000;
+  color:white;
+  padding:10px;
+  margin-bottom:15px;
+  font-weight:bold;
+  border-radius:6px;
+}
+
+#sofBox {
+  background:#003366;
+  padding:10px;
+  margin-bottom:15px;
+  border-radius:6px;
+  font-size:18px;
+  font-weight:bold;
+}
+
+.warnIcon {
+  color: orange;
+  font-weight: bold;
+  margin-left: 6px;
+}
+
+.popupBG {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.popup {
+  background: #222;
+  padding: 20px;
+  border-radius: 10px;
+}
+</style>
+</head>
 <body>
 
-<header class="topbar">
-  <div class="logo">
-    <img src="logo.png" alt="Ascendia Racing">
-    <span>Ascendia Racing — Endurance Planner</span>
+<div style="margin-bottom:15px;">
+  <button onclick="window.location.href='index.html'">🏠 Accueil</button>
+  <button onclick="window.location.href='live.html'">🎮 Live Manager</button>
+  <button onclick="window.location.href='export.html'">📤 Export du planning</button>
+</div>
+
+<h1>iRacing Endurance Planner</h1>
+
+<div id="sofBox">🏁 SOF équipe : -</div>
+<div id="ruleBanner"></div>
+
+<div class="block">
+<h2>Nom du planning</h2>
+<input id="planName" placeholder="Ex: Spa 24h - Team X">
+</div>
+
+<div class="block">
+<h2>Pilotes</h2>
+<input id="driverName" placeholder="Nom du pilote">
+<input id="driverIR" type="number" placeholder="iRating" value="1500">
+<button onclick="addDriver()">➕ Ajouter</button>
+<div id="drivers"></div>
+</div>
+
+<div class="block">
+<h2>Course</h2>
+Heure départ <input type="time" id="startTime" value="13:00"><br>
+Durée (heures) <input type="number" id="raceHours" value="6"><br>
+Type relais 
+<select id="stintMode">
+  <option value="single">Simple</option>
+  <option value="double">Double</option>
+</select>
+</div>
+
+<div class="block">
+<h2>Carburant</h2>
+Capacité réservoir (L) <input type="number" id="fuelCap" value="120"><br>
+Conso par tour (L) <input type="number" id="fuelLap" value="3.2" step="0.01"><br>
+Temps au tour (mm:ss) <input id="lapTime" value="01:45"><br>
+Temps de pit (secondes) <input type="number" id="pitSec" value="40">
+</div>
+
+<div class="block">
+<button onclick="generatePlan()">📋 Générer le planning</button>
+<button onclick="savePlan()">💾 Sauvegarder</button>
+<br><br>
+<select id="loadSelect"></select>
+<button onclick="loadSelectedPlan()">📂 Charger</button>
+<button onclick="deleteSelectedPlan()">🗑️ Supprimer</button>
+</div>
+
+<p id="info"></p>
+
+<h2>Planning</h2>
+<table>
+<thead>
+<tr><th>Début</th><th>Fin</th><th>Pilote</th><th>Tours</th><th>Action</th></tr>
+</thead>
+<tbody id="planTable"></tbody>
+</table>
+
+<h2>Règle iRacing</h2>
+<div id="checks"></div>
+
+<!-- POPUP EDIT -->
+<div class="popupBG" id="editPopup">
+  <div class="popup">
+    <h3>Changer le pilote</h3>
+    <select id="editSelect"></select><br><br>
+    <button onclick="confirmEdit()">Valider</button>
+    <button onclick="closeEdit()">Annuler</button>
   </div>
-  <div class="nav">
-    <a href="index.html" class="btn">🏠 Accueil</a>
-    <a href="live.html" class="btn">🟢 Live</a>
-    <a href="export.html" class="btn danger">📤 Export</a>
-  </div>
-</header>
-
-<div class="smoke"></div>
-
-<main class="container">
-
-  <aside class="leftPanel">
-
-    <div class="card" id="sofBox">🏁 SOF équipe : -</div>
-
-    <div class="card">
-      <h3>Nom du planning</h3>
-      <input id="planName" placeholder="Ex: Spa 24h - Ascendia">
-    </div>
-
-    <div class="card">
-      <h3>Pilotes</h3>
-      Nom: <input id="driverName">
-      iR: <input id="driverIR" type="number" value="1500">
-      <button onclick="addDriver()">+ Ajouter</button>
-      <div id="drivers"></div>
-    </div>
-
-    <div class="card">
-      <h3>Course</h3>
-      Heure départ: <input id="startTime" type="time" value="14:00"><br>
-      Durée (h): <input id="raceHours" type="number" value="6"><br>
-      Type relais:
-      <select id="stintMode">
-        <option value="simple">Simple</option>
-        <option value="double">Double</option>
-      </select>
-    </div>
-
-    <div class="card">
-      <h3>Voiture / Carburant</h3>
-      Capacité réservoir (L): <input id="fuelCap" type="number" value="120"><br>
-      Conso par tour (L): <input id="fuelLap" type="number" step="0.01" value="3.2"><br>
-      Temps au tour (mm:ss): <input id="lapTime" value="01:45"><br>
-      Temps pit (sec): <input id="pitSec" type="number" value="40">
-    </div>
-
-    <div class="card">
-      <button onclick="generatePlan()">🧮 Générer le planning</button>
-      <button onclick="savePlan()">💾 Sauvegarder</button><br><br>
-
-      <select id="loadSelect"></select><br>
-      <button onclick="loadSelectedPlan()">📂 Charger</button>
-      <button onclick="deleteSelectedPlan()">🗑️ Supprimer</button>
-    </div>
-
-    <div class="card" id="checks"></div>
-
-  </aside>
-
-  <section class="mainPanel">
-
-    <div id="ruleBanner" class="ruleBanner"></div>
-
-    <div class="card">
-      <h3>Planning</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Début</th>
-            <th>Fin</th>
-            <th>Pilote</th>
-            <th>Tours</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="planTable"></tbody>
-      </table>
-    </div>
-
-  </section>
-
-</main>
+</div>
 
 <script>
 let state = { name:"", drivers:[], plan:[] };
@@ -219,41 +250,9 @@ function generatePlan(){
     let rep=$("stintMode").value==="double"?2:1;
     for(let r=0;r<rep;r++){
       if(elapsed>=raceHours*3600) break;
-      let startRel = t;
-let endRel = t + stintSec;
-
-// Si on dépasse la fin de course, on coupe le relais
-let maxEnd = start + raceHours * 3600;
-if(endRel > maxEnd) endRel = maxEnd;
-
-// Durée réelle du relais
-let realDuration = endRel - startRel;
-
-// Tours réels possibles dans ce relais
-let realLaps = Math.floor(realDuration / lapSec);
-
-// Sécurité
-if(realLaps < 0) realLaps = 0;
-
-state.plan.push({
-  start: startRel,
-  end: endRel,
-  driver: found.name,
-  laps: realLaps
-});
-
-// Avance le temps
-t = endRel;
-elapsed += realDuration;
-
-// Ajoute le pit seulement si ce n'est pas la fin de course
-if(t < maxEnd && r < rep-1){
-  t += pitSec;
-  elapsed += pitSec;
-}
-
-      
-      
+      state.plan.push({start:t,end:t+stintSec,driver:found.name,laps});
+      t+=stintSec; elapsed+=stintSec;
+      if(r<rep-1){t+=pitSec; elapsed+=pitSec;}
     }
     idx=(idx+1)%state.drivers.length;
   }
@@ -407,18 +406,4 @@ updateSOF();
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
