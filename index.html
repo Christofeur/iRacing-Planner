@@ -50,7 +50,11 @@ Temps de pit (secondes) <input type="number" id="pitSec" value="40">
 <div class="block">
 <button onclick="generatePlan()">📋 Générer le planning</button>
 <button onclick="savePlan()">💾 Sauvegarder</button>
-<button onclick="loadPlan()">📂 Charger</button>
+
+<br><br>
+
+<select id="loadSelect"></select>
+<button onclick="loadSelectedPlan()">📂 Charger</button>
 </div>
 
 <p id="info"></p>
@@ -69,7 +73,7 @@ Temps de pit (secondes) <input type="number" id="pitSec" value="40">
 <script>
 let state = {
   name: "",
-  drivers: [], // {name, unavail:[{from:"HH:MM",to:"HH:MM"}]}
+  drivers: [],
   plan: [],
   settings: {}
 };
@@ -118,7 +122,7 @@ function renderDrivers(){
   });
 }
 
-// ---------- Disponibilité (robuste, même avec minuit) ----------
+// ---------- Disponibilité ----------
 function isAvailable(driver, startSec, endSec){
   for(let u of driver.unavail){
     let a = parseHM(u.from);
@@ -135,7 +139,7 @@ function isAvailable(driver, startSec, endSec){
     } else if(a > b){
       ranges.push([a, b+86400]);
     } else {
-      return false; // indispo 24h
+      return false;
     }
 
     for(let r of ranges){
@@ -182,7 +186,6 @@ function generatePlan(){
     }
     first = false;
 
-    // chercher un pilote dispo
     let found = null;
     let tries = 0;
     while(tries < state.drivers.length){
@@ -275,7 +278,7 @@ function checkRules(){
   });
 }
 
-// ---------- Sauvegarde / Chargement ----------
+// ---------- Sauvegarde ----------
 function savePlan(){
   let name = $("planName").value.trim();
   if(!name){
@@ -298,21 +301,49 @@ function savePlan(){
   };
 
   localStorage.setItem("iracing_plan_" + name, JSON.stringify(data));
+  refreshLoadList();
   alert("Sauvegarde OK");
 }
 
-function loadPlan(){
-  let name = prompt("Nom du planning à charger ?");
-  if(!name) return;
+// ---------- Liste déroulante ----------
+function refreshLoadList(){
+  let sel = $("loadSelect");
+  sel.innerHTML = "";
+
+  let keys = Object.keys(localStorage).filter(k => k.startsWith("iracing_plan_"));
+
+  if(keys.length === 0){
+    let opt = document.createElement("option");
+    opt.textContent = "Aucune sauvegarde";
+    opt.value = "";
+    sel.appendChild(opt);
+    return;
+  }
+
+  keys.forEach(k=>{
+    let name = k.replace("iracing_plan_","");
+    let opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+}
+
+// ---------- Chargement ----------
+function loadSelectedPlan(){
+  let name = $("loadSelect").value;
+  if(!name){
+    alert("Aucune sauvegarde sélectionnée");
+    return;
+  }
 
   let raw = localStorage.getItem("iracing_plan_" + name);
   if(!raw){
-    alert("Aucune sauvegarde avec ce nom");
+    alert("Sauvegarde introuvable");
     return;
   }
 
   let data = JSON.parse(raw);
-
   state = data.state;
 
   $("planName").value = state.name;
@@ -330,6 +361,9 @@ function loadPlan(){
 
   alert("Chargement OK");
 }
+
+// init
+refreshLoadList();
 </script>
 
 </body>
