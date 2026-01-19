@@ -1,0 +1,214 @@
+/* ============================= */
+/*      ASCENDIA RACING UI       */
+/* ============================= */
+
+:root{
+  --bg-main: #05080f;
+  --bg-panel: #0b1220;
+  --bg-panel-2: #0f1a2e;
+  --border: rgba(0,180,255,0.25);
+
+  --text-main: #e8f1ff;
+  --text-muted: #9fb3c8;
+
+  --accent: #00c8ff;
+  --accent-2: #1e90ff;
+
+  --ok: #2ecc71;
+  --warn: #f1c40f;
+  --bad: #e74c3c;
+}
+
+*{
+  box-sizing: border-box;
+}
+
+body{
+  margin:0;
+  font-family: "Orbitron", "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top, #0b1220, #05080f 70%);
+  color: var(--text-main);
+}
+
+/* ===== HEADER ===== */
+
+header{
+  height:70px;
+  background: linear-gradient(180deg, #050b16, #05080f);
+  border-bottom: 1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 20px;
+  box-shadow: 0 0 25px rgba(0,200,255,0.15);
+}
+
+header .title{
+  display:flex;
+  align-items:center;
+  gap:15px;
+  font-size:20px;
+  font-weight:700;
+  letter-spacing:1px;
+}
+
+header .title img{
+  height:42px;
+}
+
+header .nav button{
+  margin-left:10px;
+}
+
+/* ===== BUTTONS ===== */
+
+button{
+  background: linear-gradient(180deg, #0bbcff, #0088cc);
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  color: #001018;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 15px rgba(0,200,255,0.35);
+}
+
+button:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 0 25px rgba(0,200,255,0.6);
+}
+
+button:disabled{
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ===== INPUTS ===== */
+
+input, select{
+  width:100%;
+  background: #050b16;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--text-main);
+  margin-top:4px;
+}
+
+input:focus, select:focus{
+  outline:none;
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(0,200,255,0.4);
+}
+
+/* ===== LAYOUT ===== */
+
+.container{
+  padding: 20px;
+  max-width: 1800px;
+  margin: auto;
+}
+
+/* ===== PANELS ===== */
+
+.panel{
+  background: linear-gradient(180deg, var(--bg-panel-2), var(--bg-panel));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 0 30px rgba(0,0,0,0.6);
+}
+
+.panel h2{
+  margin-top:0;
+  color: var(--accent);
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+/* ===== PILOTES ===== */
+
+.block{
+  background: #050b16;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+/* ===== TABLE ===== */
+
+table{
+  width:100%;
+  border-collapse: collapse;
+  background: #050b16;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+th{
+  background: linear-gradient(180deg, #061225, #050b16);
+  color: var(--accent);
+  padding: 12px;
+  text-align:left;
+  border-bottom:1px solid var(--border);
+}
+
+td{
+  padding: 10px;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+}
+
+tr:nth-child(even){
+  background: rgba(255,255,255,0.02);
+}
+
+tr:hover{
+  background: rgba(0,200,255,0.08);
+}
+
+tr.bad{
+  background: rgba(231,76,60,0.25) !important;
+}
+
+/* ===== WARN ICON ===== */
+
+.warnIcon{
+  color: var(--bad);
+  margin-left: 6px;
+}
+
+/* ===== RULE BANNER ===== */
+
+#ruleBanner{
+  background: linear-gradient(90deg, #4b0f0f, #7a1f1f);
+  border: 1px solid #e74c3c;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+/* ===== POPUP ===== */
+
+.popup{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.popup .box{
+  background: linear-gradient(180deg, var(--bg-panel-2), var(--bg-panel));
+  border-radius: 14px;
+  padding: 20px;
+  min-width: 300px;
+  border: 1px solid var(--border);
+  box-shadow: 0 0 40px rgba(0,0,0,0.8);
+}
