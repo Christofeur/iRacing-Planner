@@ -43,6 +43,7 @@ td, th { border:1px solid #555; padding:6px; }
 
 <div class="topbar">
   <button onclick="window.location.href='index.html'">🏠 Accueil</button>
+  <button id="undoBtn" onclick="undoReplan()" disabled>↩️ Annuler le dernier recalcul</button>
 </div>
 
 <h1>🎮 Live Manager</h1>
@@ -97,9 +98,12 @@ function fmt(sec){
 
 // -------- Données --------
 let loadedData = null;
-let workingPlan = null;   // planning live modifiable
+let workingPlan = null;      // planning live courant
+let previousPlan = null;     // sauvegarde pour undo
 let incidentIndex = null;
-let replannedFromIndex = null; // à partir de quel index on marque comme recalculé
+
+let replannedFromIndex = null;
+let previousReplannedFromIndex = null;
 
 // -------- Charger la liste des sauvegardes --------
 function refreshLoadList(){
@@ -127,7 +131,11 @@ function loadPlan(){
   // COPIE de travail
   workingPlan = JSON.parse(JSON.stringify(loadedData.state.plan));
 
+  previousPlan = null;
   replannedFromIndex = null;
+  previousReplannedFromIndex = null;
+
+  $("undoBtn").disabled = true;
 
   $("planTitle").textContent = "Planning : " + n;
 
@@ -184,14 +192,20 @@ function confirmIncident(){
 
 // -------- Replanification --------
 function applyReplan(index, newStartTime){
+  // Sauvegarde pour undo
+  previousPlan = JSON.parse(JSON.stringify(workingPlan));
+  previousReplannedFromIndex = replannedFromIndex;
+
+  $("undoBtn").disabled = false;
+
   // On garde tout avant l'incident
   let before = workingPlan.slice(0, index);
 
-  // Infos depuis la sauvegarde
+  // Infos depuis la sauvegarde initiale
   let originalPlan = loadedData.state.plan;
   let form = loadedData.form;
 
-  // Durée d'un relais (on suppose constant)
+  // Durée d'un relais (supposée constante)
   let first = originalPlan[0];
   let stintDuration = first.end - first.start;
 
@@ -227,8 +241,23 @@ function applyReplan(index, newStartTime){
   // Nouveau planning live
   workingPlan = before.concat(newPart);
 
-  // On marque à partir d'où c'est recalculé
+  // Marquage visuel
   replannedFromIndex = index;
+
+  renderPlan();
+}
+
+// -------- Annuler --------
+function undoReplan(){
+  if(!previousPlan) return;
+
+  workingPlan = JSON.parse(JSON.stringify(previousPlan));
+  replannedFromIndex = previousReplannedFromIndex;
+
+  previousPlan = null;
+  previousReplannedFromIndex = null;
+
+  $("undoBtn").disabled = true;
 
   renderPlan();
 }
