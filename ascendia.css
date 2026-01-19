@@ -1,11 +1,13 @@
-/* ============================= */
-/*      ASCENDIA RACING UI       */
-/* ============================= */
+/* ============================================
+   ASCENDIA RACING — PRO UI THEME
+   ============================================ */
 
 :root{
+  --bg-deep: #02040a;
   --bg-main: #05080f;
   --bg-panel: #0b1220;
   --bg-panel-2: #0f1a2e;
+
   --border: rgba(0,180,255,0.25);
 
   --text-main: #e8f1ff;
@@ -23,23 +25,27 @@
   box-sizing: border-box;
 }
 
-body{
+html, body{
   margin:0;
+  padding:0;
+  min-height:100%;
+}
+
+body{
   font-family: "Orbitron", "Segoe UI", sans-serif;
   color: var(--text-main);
 
   background:
-    radial-gradient(circle at 20% 10%, rgba(0,200,255,0.12), transparent 40%),
-    radial-gradient(circle at 80% 20%, rgba(0,120,255,0.10), transparent 45%),
-    radial-gradient(circle at 50% 80%, rgba(0,80,200,0.12), transparent 50%),
+    radial-gradient(circle at 15% 10%, rgba(0,200,255,0.12), transparent 40%),
+    radial-gradient(circle at 80% 15%, rgba(0,120,255,0.10), transparent 45%),
+    radial-gradient(circle at 50% 85%, rgba(0,80,200,0.12), transparent 50%),
     radial-gradient(circle at 10% 90%, rgba(0,200,255,0.08), transparent 40%),
-    linear-gradient(180deg, #05080f, #02040a 70%);
+    linear-gradient(180deg, var(--bg-main), var(--bg-deep) 70%);
 
   background-attachment: fixed;
 }
 
-
-/* ===== HEADER ===== */
+/* ================= HEADER ================= */
 
 header{
   height:70px;
@@ -69,7 +75,7 @@ header .nav button{
   margin-left:10px;
 }
 
-/* ===== BUTTONS ===== */
+/* ================= BUTTONS ================= */
 
 button{
   background: linear-gradient(180deg, #0bbcff, #0088cc);
@@ -94,7 +100,7 @@ button:disabled{
   box-shadow: none;
 }
 
-/* ===== INPUTS ===== */
+/* ================= INPUTS ================= */
 
 input, select{
   width:100%;
@@ -112,7 +118,7 @@ input:focus, select:focus{
   box-shadow: 0 0 10px rgba(0,200,255,0.4);
 }
 
-/* ===== LAYOUT ===== */
+/* ================= LAYOUT ================= */
 
 .container{
   padding: 20px;
@@ -120,7 +126,7 @@ input:focus, select:focus{
   margin: auto;
 }
 
-/* ===== PANELS ===== */
+/* ================= PANELS ================= */
 
 .panel{
   background: linear-gradient(180deg, var(--bg-panel-2), var(--bg-panel));
@@ -138,7 +144,7 @@ input:focus, select:focus{
   letter-spacing: 1px;
 }
 
-/* ===== PILOTES ===== */
+/* ================= PILOTES ================= */
 
 .block{
   background: #050b16;
@@ -148,7 +154,7 @@ input:focus, select:focus{
   margin-bottom: 8px;
 }
 
-/* ===== TABLE ===== */
+/* ================= TABLE ================= */
 
 table{
   width:100%;
@@ -183,14 +189,14 @@ tr.bad{
   background: rgba(231,76,60,0.25) !important;
 }
 
-/* ===== WARN ICON ===== */
+/* ================= WARN ICON ================= */
 
 .warnIcon{
   color: var(--bad);
   margin-left: 6px;
 }
 
-/* ===== RULE BANNER ===== */
+/* ================= RULE BANNER ================= */
 
 #ruleBanner{
   background: linear-gradient(90deg, #4b0f0f, #7a1f1f);
@@ -201,7 +207,7 @@ tr.bad{
   font-weight: bold;
 }
 
-/* ===== POPUP ===== */
+/* ================= POPUP ================= */
 
 .popup{
   position: fixed;
@@ -221,4 +227,3 @@ tr.bad{
   border: 1px solid var(--border);
   box-shadow: 0 0 40px rgba(0,0,0,0.8);
 }
-
