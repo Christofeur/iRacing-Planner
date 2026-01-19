@@ -255,6 +255,11 @@ function generatePlan(){
     }
     idx=(idx+1)%state.drivers.length;
   }
+// 🔧 Patch: forcer la fin de course à l'heure officielle (sans toucher au reste)
+    let officialEnd = start + raceHours * 3600;
+      if(state.plan.length > 0){
+      state.plan[state.plan.length - 1].end = officialEnd;
+}
 
   updateAll();
 }
@@ -400,3 +405,4 @@ updateSOF();
 
 </body>
 </html>
+
