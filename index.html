@@ -10,6 +10,20 @@ table { border-collapse: collapse; margin-top:10px; }
 td, th { border:1px solid #555; padding:6px; }
 .bad { background:#802020; }
 .block { border:1px solid #444; padding:10px; margin-bottom:10px; }
+
+.popupBG {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.popup {
+  background: #222;
+  padding: 20px;
+  border-radius: 10px;
+}
 </style>
 </head>
 <body>
@@ -63,13 +77,23 @@ Temps de pit (secondes) <input type="number" id="pitSec" value="40">
 <h2>Planning</h2>
 <table>
 <thead>
-<tr><th>Début</th><th>Fin</th><th>Pilote</th><th>Tours</th></tr>
+<tr><th>Début</th><th>Fin</th><th>Pilote</th><th>Tours</th><th>Action</th></tr>
 </thead>
 <tbody id="planTable"></tbody>
 </table>
 
 <h2>Règle iRacing</h2>
 <div id="checks"></div>
+
+<!-- POPUP MODIF PILOTE -->
+<div class="popupBG" id="editPopup">
+  <div class="popup">
+    <h3>Changer le pilote</h3>
+    <select id="editSelect"></select><br><br>
+    <button onclick="confirmEdit()">Valider</button>
+    <button onclick="closeEdit()">Annuler</button>
+  </div>
+</div>
 
 <script>
 let state = {
@@ -78,6 +102,8 @@ let state = {
   plan: [],
   settings: {}
 };
+
+let editIndex = null;
 
 function $(id){ return document.getElementById(id); }
 
@@ -236,7 +262,7 @@ function generatePlan(){
 function renderPlan(){
   let tb = $("planTable");
   tb.innerHTML = "";
-  state.plan.forEach(r=>{
+  state.plan.forEach((r,i)=>{
     let tr = document.createElement("tr");
     let p = state.drivers.find(d=>d.name===r.driver);
     if(p && !isAvailable(p, r.start, r.end)){
@@ -247,9 +273,46 @@ function renderPlan(){
       <td>${fmt(r.end)}</td>
       <td>${r.driver}</td>
       <td>${r.laps}</td>
+      <td><button onclick="openEdit(${i})">🔁 Changer</button></td>
     `;
     tb.appendChild(tr);
   });
+}
+
+// ---------- Popup édition ----------
+function openEdit(i){
+  editIndex = i;
+  let sel = $("editSelect");
+  sel.innerHTML = "";
+  state.drivers.forEach(d=>{
+    let opt = document.createElement("option");
+    opt.value = d.name;
+    opt.textContent = d.name;
+    sel.appendChild(opt);
+  });
+  sel.value = state.plan[i].driver;
+  $("editPopup").style.display = "flex";
+}
+
+function closeEdit(){
+  $("editPopup").style.display = "none";
+}
+
+function confirmEdit(){
+  let newDriverName = $("editSelect").value;
+  let stint = state.plan[editIndex];
+  let driver = state.drivers.find(d=>d.name === newDriverName);
+
+  if(!isAvailable(driver, stint.start, stint.end)){
+    if(!confirm("⚠️ Ce pilote est indisponible sur ce créneau. Forcer quand même ?")){
+      return;
+    }
+  }
+
+  stint.driver = newDriverName;
+  closeEdit();
+  renderPlan();
+  checkRules();
 }
 
 // ---------- Règle iRacing ----------
@@ -279,7 +342,9 @@ function checkRules(){
   });
 }
 
-// ---------- Sauvegarde ----------
+// ---------- Sauvegarde / Chargement / Suppression ----------
+// (identique à ta version précédente, inchangé pour stabilité)
+
 function savePlan(){
   let name = $("planName").value.trim();
   if(!name){
@@ -306,7 +371,6 @@ function savePlan(){
   alert("Sauvegarde OK");
 }
 
-// ---------- Liste déroulante ----------
 function refreshLoadList(){
   let sel = $("loadSelect");
   sel.innerHTML = "";
@@ -330,7 +394,6 @@ function refreshLoadList(){
   });
 }
 
-// ---------- Chargement ----------
 function loadSelectedPlan(){
   let name = $("loadSelect").value;
   if(!name){
@@ -363,7 +426,6 @@ function loadSelectedPlan(){
   alert("Chargement OK");
 }
 
-// ---------- Suppression ----------
 function deleteSelectedPlan(){
   let name = $("loadSelect").value;
   if(!name){
