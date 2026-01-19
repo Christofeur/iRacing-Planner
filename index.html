@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>iRacing Endurance Planner (Stable)</title>
+<title>iRacing Endurance Planner (Stable + SOF)</title>
 <style>
 body { font-family: Arial, sans-serif; padding:20px; background:#111; color:#eee; }
 input, select, button { margin:3px; padding:5px; }
@@ -53,7 +53,7 @@ td, th { border:1px solid #555; padding:6px; }
 </head>
 <body>
 
-<h1>iRacing Endurance Planner (version stable)</h1>
+<h1>iRacing Endurance Planner</h1>
 
 <div id="sofBox">🏁 SOF équipe : -</div>
 <div id="ruleBanner"></div>
@@ -166,7 +166,7 @@ function renderDrivers(){
   state.drivers.forEach((p,i)=>{
     let div=document.createElement("div");
     div.className="block";
-    div.innerHTML=`<b>${p.name}</b> — iR: 
+    div.innerHTML=`<b>${p.name}</b> — iR:
       <input type="number" value="${p.ir}" style="width:80px"
         onchange="state.drivers[${i}].ir = +this.value; updateSOF();">
       <button onclick="state.drivers.splice(${i},1);renderDrivers();updateSOF()">❌</button>
@@ -196,13 +196,149 @@ function isAvailable(driver,s,e){
   return true;
 }
 
-// ---------- Le reste du code (planning, règles, sauvegarde, etc.) ----------
-// 👉 Pour rester fiable, on ne touche à RIEN d’autre que l’ajout du SOF
-// 👉 Tout ce que tu avais avant continue de fonctionner pareil
+// ---------- Outils règle ----------
+function computeRuleStatus(){
+  let count={}; state.drivers.forEach(d=>count[d.name]=0);
+  state.plan.forEach(r=>count[r.driver]+=r.laps);
 
-// ⚠️ IMPORTANT : le SOF est sauvegardé car il fait partie de state.drivers[].ir
+  let raceHours=+$("raceHours").value;
+  let [lm,ls]=$("lapTime").value.split(":").map(Number);
+  let lapSec=lm*60+ls;
+  let total=Math.floor((raceHours*3600)/lapSec);
+  let min=Math.floor(total/state.drivers.length/4);
 
-// ---------- Sauvegarde / Chargement ----------
+  return { count, min };
+}
+
+// ---------- Génération ----------
+function generatePlan(){
+  if(state.drivers.length===0) return alert("Ajoute des pilotes");
+
+  let start=parseHM($("startTime").value);
+  let raceHours=+$("raceHours").value;
+  let fuelCap=+$("fuelCap").value;
+  let fuelLap=+$("fuelLap").value;
+  let [lm,ls]=$("lapTime").value.split(":").map(Number);
+  let lapSec=lm*60+ls;
+  let pitSec=+$("pitSec").value;
+
+  let laps=Math.floor(fuelCap/fuelLap);
+  let stintSec=laps*lapSec;
+  $("info").textContent=`Relais = ${laps} tours ≈ ${Math.round(stintSec/60)} min`;
+
+  state.plan=[];
+  let t=start, elapsed=0, idx=0, first=true;
+
+  while(elapsed<raceHours*3600-1){
+    if(!first){t+=pitSec; elapsed+=pitSec;}
+    first=false;
+
+    let found=null, tries=0;
+    while(tries<state.drivers.length){
+      let p=state.drivers[idx];
+      if(isAvailable(p,t,t+stintSec)){found=p; break;}
+      idx=(idx+1)%state.drivers.length; tries++;
+    }
+    if(!found) return alert("Aucun pilote disponible à "+fmt(t));
+
+    let rep=$("stintMode").value==="double"?2:1;
+    for(let r=0;r<rep;r++){
+      if(elapsed>=raceHours*3600) break;
+      state.plan.push({start:t,end:t+stintSec,driver:found.name,laps});
+      t+=stintSec; elapsed+=stintSec;
+      if(r<rep-1){t+=pitSec; elapsed+=pitSec;}
+    }
+    idx=(idx+1)%state.drivers.length;
+  }
+
+  updateAll();
+}
+
+// ---------- Affichage ----------
+function renderPlan(){
+  let tb=$("planTable"); tb.innerHTML="";
+  let rule = computeRuleStatus();
+
+  state.plan.forEach((r,i)=>{
+    let tr=document.createElement("tr");
+    let p=state.drivers.find(d=>d.name===r.driver);
+    if(p && !isAvailable(p,r.start,r.end)) tr.classList.add("bad");
+
+    let isBad = rule.count[r.driver] < rule.min;
+
+    tr.innerHTML=`
+      <td>${fmt(r.start)}</td>
+      <td>${fmt(r.end)}</td>
+      <td>${r.driver} ${isBad ? '<span class="warnIcon">⚠️</span>' : ''}</td>
+      <td>${r.laps}</td>
+      <td><button onclick="openEdit(${i})">🔁</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// ---------- Edition ----------
+function openEdit(i){
+  editIndex=i;
+  let sel=$("editSelect"); sel.innerHTML="";
+  state.drivers.forEach(d=>{
+    let o=document.createElement("option");
+    o.value=d.name; o.textContent=d.name; sel.appendChild(o);
+  });
+  sel.value=state.plan[i].driver;
+  $("editPopup").style.display="flex";
+}
+function closeEdit(){ $("editPopup").style.display="none"; }
+function confirmEdit(){
+  let name=$("editSelect").value;
+  let stint=state.plan[editIndex];
+  let d=state.drivers.find(x=>x.name===name);
+  if(!isAvailable(d,stint.start,stint.end)){
+    if(!confirm("⚠️ Pilote indisponible. Forcer ?")) return;
+  }
+  stint.driver=name;
+  closeEdit();
+  updateAll();
+}
+
+// ---------- Règle + Bandeau + Popup ----------
+function checkRules(){
+  let c=$("checks"); c.innerHTML="";
+  let rule = computeRuleStatus();
+
+  c.innerHTML=`<b>Minimum requis: ${rule.min} tours</b><br>`;
+  state.drivers.forEach(d=>{
+    let ok=rule.count[d.name]>=rule.min;
+    let div=document.createElement("div");
+    div.textContent=`${d.name} : ${rule.count[d.name]} tours`;
+    div.style.color=ok?"lightgreen":"red";
+    c.appendChild(div);
+  });
+}
+
+function notifyIfRuleBroken(){
+  let rule = computeRuleStatus();
+  let bad = state.drivers.filter(d=>rule.count[d.name] < rule.min);
+  let banner=$("ruleBanner");
+
+  if(bad.length){
+    let msg="⚠️ Règle iRacing non respectée par : "+bad.map(d=>d.name).join(", ");
+    banner.textContent=msg;
+    banner.style.display="block";
+    alert("⚠️ Règle iRacing non respectée par :\n\n"+bad.map(d=>"- "+d.name).join("\n"));
+  } else {
+    banner.style.display="none";
+    banner.textContent="";
+  }
+}
+
+// ---------- Mise à jour globale ----------
+function updateAll(){
+  renderPlan();
+  checkRules();
+  notifyIfRuleBroken();
+}
+
+// ---------- Sauvegarde / Chargement / Suppression ----------
 function savePlan(){
   let name=$("planName").value.trim();
   if(!name) return alert("Donne un nom au planning");
@@ -240,6 +376,7 @@ function loadSelectedPlan(){
   Object.entries(data.form).forEach(([k,v])=>$(k).value=v);
   renderDrivers();
   updateSOF();
+  updateAll();
 }
 
 function deleteSelectedPlan(){
