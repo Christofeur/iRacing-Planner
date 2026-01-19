@@ -1,1 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>iRacing Live Manager</title>
+<style>
+body { font-family: Arial, sans-serif; padding:20px; background:#111; color:#eee; }
+select, button { padding:5px; margin:5px; }
+
+table { border-collapse: collapse; margin-top:20px; }
+td, th { border:1px solid #555; padding:6px; }
+.block { border:1px solid #444; padding:10px; margin-bottom:10px; }
+</style>
+</head>
+<body>
+
+<h1>🎮 Live Manager</h1>
+
+<div class="block">
+  <h2>Charger un planning</h2>
+  <select id="loadSelect"></select>
+  <button onclick="loadPlan()">📂 Charger</button>
+</div>
+
+<h2 id="planTitle"></h2>
+
+<table>
+<thead>
+<tr>
+  <th>#</th>
+  <th>Début</th>
+  <th>Fin</th>
+  <th>Pilote</th>
+  <th>Tours</th>
+</tr>
+</thead>
+<tbody id="planTable"></tbody>
+</table>
+
+<script>
+function $(id){ return document.getElementById(id); }
+
+// -------- Temps --------
+function fmt(sec){
+  sec=((sec%86400)+86400)%86400;
+  let h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60);
+  return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
+}
+
+// -------- Charger la liste des sauvegardes --------
+function refreshLoadList(){
+  let sel=$("loadSelect"); sel.innerHTML="";
+  Object.keys(localStorage)
+    .filter(k=>k.startsWith("iracing_plan_"))
+    .forEach(k=>{
+      let n=k.replace("iracing_plan_","");
+      let o=document.createElement("option");
+      o.value=n; o.textContent=n;
+      sel.appendChild(o);
+    });
+}
+
+let loadedData = null;
+
+// -------- Charger un planning --------
+function loadPlan(){
+  let n = $("loadSelect").value;
+  if(!n) return alert("Aucune sauvegarde sélectionnée");
+
+  let raw = localStorage.getItem("iracing_plan_"+n);
+  if(!raw) return alert("Sauvegarde introuvable");
+
+  loadedData = JSON.parse(raw);
+
+  $("planTitle").textContent = "Planning : " + n;
+
+  renderPlan();
+}
+
+// -------- Affichage du planning --------
+function renderPlan(){
+  let tb = $("planTable");
+  tb.innerHTML = "";
+
+  if(!loadedData || !loadedData.state || !loadedData.state.plan) return;
+
+  loadedData.state.plan.forEach((r,i)=>{
+    let tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td>${fmt(r.start)}</td>
+      <td>${fmt(r.end)}</td>
+      <td>${r.driver}</td>
+      <td>${r.laps}</td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+// init
+refreshLoadList();
+</script>
+
+</body>
+</html>
 
