@@ -1,39 +1,160 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>iRacing Endurance Tools</title>
-<style>
-body {
-  background:#111;
-  color:white;
-  font-family:Arial;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  height:100vh;
-}
-.container {
-  text-align:center;
-}
-button {
-  font-size:24px;
-  padding:20px 40px;
-  margin:20px;
-  cursor:pointer;
-}
-</style>
+  <meta charset="UTF-8">
+  <title>Ascendia Racing — iRacing Tools</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Police -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Orbitron", sans-serif;
+      background: radial-gradient(circle at top, #0b1220, #05080f 70%);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      text-align: center;
+      width: 100%;
+      max-width: 900px;
+      padding: 40px 20px;
+    }
+
+    .logo {
+      max-width: 320px;
+      margin-bottom: 30px;
+      filter: drop-shadow(0 0 25px rgba(0,200,255,0.4));
+    }
+
+    h1 {
+      margin: 10px 0 40px 0;
+      font-weight: 800;
+      letter-spacing: 2px;
+      font-size: 32px;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 25px;
+    }
+
+    @media (min-width: 700px) {
+      .buttons {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .card {
+      background: linear-gradient(180deg, #0f1a2e, #0a1020);
+      border-radius: 16px;
+      padding: 30px 20px;
+      text-decoration: none;
+      color: white;
+      border: 1px solid rgba(0,150,255,0.2);
+      box-shadow: 0 0 25px rgba(0,0,0,0.6);
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 0 40px rgba(0,150,255,0.35);
+      border-color: rgba(0,200,255,0.6);
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top, rgba(0,200,255,0.15), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .card:hover::after {
+      opacity: 1;
+    }
+
+    .icon {
+      font-size: 42px;
+      margin-bottom: 15px;
+    }
+
+    .title {
+      font-size: 20px;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .desc {
+      font-size: 14px;
+      opacity: 0.8;
+      line-height: 1.4;
+    }
+
+    footer {
+      margin-top: 50px;
+      font-size: 12px;
+      opacity: 0.4;
+    }
+  </style>
 </head>
 <body>
 
-<div class="container">
-  <h1>iRacing Endurance Tools</h1>
-  <br>
-  <button onclick="location.href='planner.html'">🛠️ Planner</button>
-  <button onclick="location.href='live.html'">🎮 Live Manager</button>
-  <button onclick="location.href='export.html'">📤 Export du planing</button>
-</div>
+  <div class="container">
+
+    <!-- Logo -->
+    <img src="logo.png" alt="Ascendia Racing" class="logo">
+
+    <h1>Ascendia Racing — iRacing Tools</h1>
+
+    <div class="buttons">
+
+      <a href="planner.html" class="card">
+        <div class="icon">🛠️</div>
+        <div class="title">Planning</div>
+        <div class="desc">
+          Créer et gérer le planning d’endurance<br>
+          Relais, pilotes, carburant, règles iRacing
+        </div>
+      </a>
+
+      <a href="live.html" class="card">
+        <div class="icon">🟢</div>
+        <div class="title">Live Manager</div>
+        <div class="desc">
+          Gérer la course en live<br>
+          Incidents, recalculs, suivi réel
+        </div>
+      </a>
+
+      <a href="export.html" class="card">
+        <div class="icon">📤</div>
+        <div class="title">Export</div>
+        <div class="desc">
+          Exporter le planning<br>
+          Image PNG propre pour l’équipe
+        </div>
+      </a>
+
+    </div>
+
+    <footer>
+      Ascendia Racing © iRacing Endurance Tools
+    </footer>
+
+  </div>
 
 </body>
 </html>
-
