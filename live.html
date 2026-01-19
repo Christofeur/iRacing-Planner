@@ -13,6 +13,17 @@ td, th { border:1px solid #555; padding:6px; }
 
 .topbar { margin-bottom: 15px; }
 
+.replanned {
+  background: #1f3550;
+}
+
+.replannedIcon {
+  margin-left: 6px;
+  color: #7fb7ff;
+  font-weight: bold;
+}
+
+/* Popup */
 .popupBG {
   position: fixed;
   inset: 0;
@@ -31,7 +42,7 @@ td, th { border:1px solid #555; padding:6px; }
 <body>
 
 <div class="topbar">
-  <button onclick="window.location.href='planner.html'">🛠️ Planner</button>
+  <button onclick="window.location.href='index.html'">🏠 Accueil</button>
 </div>
 
 <h1>🎮 Live Manager</h1>
@@ -86,8 +97,9 @@ function fmt(sec){
 
 // -------- Données --------
 let loadedData = null;
-let workingPlan = null; // copie modifiable pour le live
+let workingPlan = null;   // planning live modifiable
 let incidentIndex = null;
+let replannedFromIndex = null; // à partir de quel index on marque comme recalculé
 
 // -------- Charger la liste des sauvegardes --------
 function refreshLoadList(){
@@ -112,8 +124,10 @@ function loadPlan(){
 
   loadedData = JSON.parse(raw);
 
-  // On fait une COPIE de travail du plan
+  // COPIE de travail
   workingPlan = JSON.parse(JSON.stringify(loadedData.state.plan));
+
+  replannedFromIndex = null;
 
   $("planTitle").textContent = "Planning : " + n;
 
@@ -129,11 +143,15 @@ function renderPlan(){
 
   workingPlan.forEach((r,i)=>{
     let tr = document.createElement("tr");
+
+    let isReplanned = (replannedFromIndex !== null && i >= replannedFromIndex);
+    if(isReplanned) tr.classList.add("replanned");
+
     tr.innerHTML = `
       <td>${i+1}</td>
       <td>${fmt(r.start)}</td>
       <td>${fmt(r.end)}</td>
-      <td>${r.driver}</td>
+      <td>${r.driver} ${isReplanned ? '<span class="replannedIcon">🔁</span>' : ''}</td>
       <td>${r.laps}</td>
       <td><button onclick="openIncident(${i})">🚨 Incident</button></td>
     `;
@@ -169,23 +187,23 @@ function applyReplan(index, newStartTime){
   // On garde tout avant l'incident
   let before = workingPlan.slice(0, index);
 
-  // On récupère les infos utiles
+  // Infos depuis la sauvegarde
   let originalPlan = loadedData.state.plan;
   let form = loadedData.form;
 
-  // Durée d'un relais
+  // Durée d'un relais (on suppose constant)
   let first = originalPlan[0];
   let stintDuration = first.end - first.start;
 
   let pitSec = +form.pitSec || 0;
 
-  // Ordre des pilotes à partir de l'index
+  // Ordre des pilotes à partir de l'index ORIGINAL
   let driversOrder = [];
   for(let i=index;i<originalPlan.length;i++){
     driversOrder.push(originalPlan[i].driver);
   }
 
-  // On reconstruit la suite
+  // Reconstruction
   let newPart = [];
   let t = newStartTime;
 
@@ -206,8 +224,11 @@ function applyReplan(index, newStartTime){
     t = end + pitSec;
   }
 
-  // Nouveau planning
+  // Nouveau planning live
   workingPlan = before.concat(newPart);
+
+  // On marque à partir d'où c'est recalculé
+  replannedFromIndex = index;
 
   renderPlan();
 }
