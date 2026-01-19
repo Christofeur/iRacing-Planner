@@ -239,19 +239,22 @@ function applyReplan(index, newStartTime){
     if(end > raceEndTime){
       end = raceEndTime;
     }
+newPart.push({
+  start: start,
+  end: end,
+  driver: driver,
+  laps: originalPlan[index].laps
+});
 
-    newPart.push({
-      start: start,
-      end: end,
-      driver: driver,
-      laps: originalPlan[index].laps
-    });
+// Si on a atteint la fin de course, on s'arrête
+if(end >= raceEndTime) break;
 
-    // Si on a atteint la fin de course, on s'arrête
-    if(end >= raceEndTime) break;
+// pit avant relais suivant
+t = end + pitSec;
 
-    // pit avant relais suivant
-    t = end + pitSec;
+    
+
+    
   }
 
   // Nouveau planning live
