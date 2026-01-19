@@ -21,6 +21,12 @@ td, th { border:1px solid #555; padding:6px; }
   border-radius:6px;
 }
 
+.warnIcon {
+  color: orange;
+  font-weight: bold;
+  margin-left: 6px;
+}
+
 .popupBG {
   position: fixed;
   inset: 0;
@@ -161,6 +167,20 @@ function isAvailable(driver,s,e){
   return true;
 }
 
+// ---------- Outils règle ----------
+function computeRuleStatus(){
+  let count={}; state.drivers.forEach(d=>count[d.name]=0);
+  state.plan.forEach(r=>count[r.driver]+=r.laps);
+
+  let raceHours=+$("raceHours").value;
+  let [lm,ls]=$("lapTime").value.split(":").map(Number);
+  let lapSec=lm*60+ls;
+  let total=Math.floor((raceHours*3600)/lapSec);
+  let min=Math.floor(total/state.drivers.length/4);
+
+  return { count, min };
+}
+
 // ---------- Génération ----------
 function generatePlan(){
   if(state.drivers.length===0) return alert("Ajoute des pilotes");
@@ -202,22 +222,25 @@ function generatePlan(){
     idx=(idx+1)%state.drivers.length;
   }
 
-  renderPlan();
-  checkRules();
-  notifyIfRuleBroken(true);
+  updateAll();
 }
 
 // ---------- Affichage ----------
 function renderPlan(){
   let tb=$("planTable"); tb.innerHTML="";
+  let rule = computeRuleStatus();
+
   state.plan.forEach((r,i)=>{
     let tr=document.createElement("tr");
     let p=state.drivers.find(d=>d.name===r.driver);
     if(p && !isAvailable(p,r.start,r.end)) tr.classList.add("bad");
+
+    let isBad = rule.count[r.driver] < rule.min;
+
     tr.innerHTML=`
       <td>${fmt(r.start)}</td>
       <td>${fmt(r.end)}</td>
-      <td>${r.driver}</td>
+      <td>${r.driver} ${isBad ? '<span class="warnIcon">⚠️</span>' : ''}</td>
       <td>${r.laps}</td>
       <td><button onclick="openEdit(${i})">🔁</button></td>`;
     tb.appendChild(tr);
@@ -245,44 +268,27 @@ function confirmEdit(){
   }
   stint.driver=name;
   closeEdit();
-  renderPlan();
-  checkRules();
-  notifyIfRuleBroken(true);
+  updateAll(true);
 }
 
-// ---------- Règle iRacing ----------
+// ---------- Règle + Bandeau + Popup ----------
 function checkRules(){
   let c=$("checks"); c.innerHTML="";
-  let count={}; state.drivers.forEach(d=>count[d.name]=0);
-  state.plan.forEach(r=>count[r.driver]+=r.laps);
+  let rule = computeRuleStatus();
 
-  let raceHours=+$("raceHours").value;
-  let [lm,ls]=$("lapTime").value.split(":").map(Number);
-  let lapSec=lm*60+ls;
-  let total=Math.floor((raceHours*3600)/lapSec);
-  let min=Math.floor(total/state.drivers.length/4);
-
-  c.innerHTML=`<b>Minimum requis: ${min} tours</b><br>`;
+  c.innerHTML=`<b>Minimum requis: ${rule.min} tours</b><br>`;
   state.drivers.forEach(d=>{
-    let ok=count[d.name]>=min;
+    let ok=rule.count[d.name]>=rule.min;
     let div=document.createElement("div");
-    div.textContent=`${d.name} : ${count[d.name]} tours`;
+    div.textContent=`${d.name} : ${rule.count[d.name]} tours`;
     div.style.color=ok?"lightgreen":"red";
     c.appendChild(div);
   });
 }
 
 function notifyIfRuleBroken(showPopup){
-  let count={}; state.drivers.forEach(d=>count[d.name]=0);
-  state.plan.forEach(r=>count[r.driver]+=r.laps);
-
-  let raceHours=+$("raceHours").value;
-  let [lm,ls]=$("lapTime").value.split(":").map(Number);
-  let lapSec=lm*60+ls;
-  let total=Math.floor((raceHours*3600)/lapSec);
-  let min=Math.floor(total/state.drivers.length/4);
-
-  let bad=state.drivers.filter(d=>count[d.name]<min);
+  let rule = computeRuleStatus();
+  let bad = state.drivers.filter(d=>rule.count[d.name] < rule.min);
   let banner=$("ruleBanner");
 
   if(bad.length){
@@ -296,6 +302,13 @@ function notifyIfRuleBroken(showPopup){
     banner.style.display="none";
     banner.textContent="";
   }
+}
+
+// ---------- Mise à jour globale ----------
+function updateAll(showPopup=false){
+  renderPlan();
+  checkRules();
+  notifyIfRuleBroken(showPopup);
 }
 
 // ---------- Sauvegarde / Chargement / Suppression ----------
@@ -334,7 +347,8 @@ function loadSelectedPlan(){
   state=data.state;
   $("planName").value=state.name;
   Object.entries(data.form).forEach(([k,v])=>$(k).value=v);
-  renderDrivers(); renderPlan(); checkRules(); notifyIfRuleBroken(false);
+  renderDrivers();
+  updateAll(false);
 }
 
 function deleteSelectedPlan(){
