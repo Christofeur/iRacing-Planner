@@ -250,10 +250,39 @@ function generatePlan(){
     let rep=$("stintMode").value==="double"?2:1;
     for(let r=0;r<rep;r++){
       if(elapsed>=raceHours*3600) break;
-      state.plan.push({start:t,end:t+stintSec,driver:found.name,laps});
-      t+=stintSec; elapsed+=stintSec;
-      if(r<rep-1){t+=pitSec; elapsed+=pitSec;}
-    }
+      let startRel = t;
+      let endRel = t + stintSec;
+
+// Si on dépasse la fin de course, on coupe le relais
+      let maxEnd = start + raceHours * 3600;
+      if(endRel > maxEnd) endRel = maxEnd;
+
+// Durée réelle du relais
+      let realDuration = endRel - startRel;
+
+// Tours réels possibles dans ce relais
+      let realLaps = Math.floor(realDuration / lapSec);
+
+// Sécurité
+      if(realLaps < 0) realLaps = 0;
+
+state.plan.push({
+  start: startRel,
+  end: endRel,
+  driver: found.name,
+  laps: realLaps
+});
+
+// Avance le temps
+t = endRel;
+elapsed += realDuration;
+
+// Ajoute le pit seulement si ce n'est pas la fin de course
+      if(t < maxEnd && r < rep-1){
+  t += pitSec;
+  elapsed += pitSec;
+}
+
     idx=(idx+1)%state.drivers.length;
   }
 // 🔧 Patch: forcer la fin de course à l'heure officielle (sans toucher au reste)
@@ -406,6 +435,7 @@ updateSOF();
 
 </body>
 </html>
+
 
 
 
