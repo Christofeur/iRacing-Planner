@@ -234,27 +234,44 @@ function generatePlan(){
   state.plan=[];
   let t=start, elapsed=0, idx=0, first=true;
 
-  while(elapsed<raceHours*3600-1){
-    if(!first){t+=pitSec; elapsed+=pitSec;}
-    first=false;
+  state.plan = [];
 
-    let found=null, tries=0;
-    while(tries<state.drivers.length){
-      let p=state.drivers[idx];
-      if(isAvailable(p,t,t+stintSec)){found=p; break;}
-      idx=(idx+1)%state.drivers.length; tries++;
-    }
-    if(!found) return alert("Aucun pilote disponible à "+fmt(t));
+let currentTime = start;
+let totalDuration = raceHours * 3600;
+let elapsedTime = 0;
+let firstLoop = true;
 
-    let rep=$("stintMode").value==="double"?2:1;
-    for(let r=0;r<rep;r++){
-      if(elapsed>=raceHours*3600) break;
-      state.plan.push({start:t,end:t+stintSec,driver:found.name,laps});
-      t+=stintSec; elapsed+=stintSec;
-      if(r<rep-1){t+=pitSec; elapsed+=pitSec;}
-    }
-    idx=(idx+1)%state.drivers.length;
+// Nombre de relais possibles
+let maxStints = Math.floor(totalDuration / stintSec);
+
+// Génère les relais jusqu'à ce que le temps soit écoulé
+for(let i=0; i < maxStints; i++){
+  if(!firstLoop){
+    // Pit entre chaque relais
+    currentTime += pitSec;
+    elapsedTime += pitSec;
   }
+  firstLoop = false;
+
+  // Si on dépasse la durée totale, on arrête
+  if(elapsedTime + stintSec > totalDuration) break;
+
+  let startRel = currentTime;
+  let endRel = startRel + stintSec;
+
+  state.plan.push({
+    start: startRel,
+    end: endRel,
+    driver: state.drivers[idx].name,
+    laps
+  });
+
+  currentTime = endRel;
+  elapsedTime += stintSec;
+
+  idx = (idx + 1) % state.drivers.length;
+}
+
 
   updateAll();
 }
@@ -400,5 +417,6 @@ updateSOF();
 
 </body>
 </html>
+
 
 
