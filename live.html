@@ -239,20 +239,23 @@ function applyReplan(index, newStartTime){
     if(end > raceEndTime){
       end = raceEndTime;
     }
+  let lapTimeSec = (originalPlan[0].end - originalPlan[0].start) / originalPlan[0].laps;
+let realDuration = end - start;
+let realLaps = Math.floor(realDuration / lapTimeSec);
+
 newPart.push({
   start: start,
   end: end,
   driver: driver,
-  laps: originalPlan[index].laps
+  laps: realLaps
 });
 
 // Si on a atteint la fin de course, on s'arrête
 if(end >= raceEndTime) break;
 
-// pit avant relais suivant
-t = end + pitSec;
+// On avance le temps SANS AJOUTER DE PIT
+t = end;
 
-    
 
     
   }
