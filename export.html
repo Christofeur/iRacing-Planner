@@ -1,1 +1,135 @@
 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>iRacing Planner - Export</title>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<style>
+body { font-family: Arial, sans-serif; padding:20px; background:#111; color:#eee; }
+select, button { padding:6px; margin:5px; }
+
+table { border-collapse: collapse; margin-top:20px; background:#000; }
+td, th { border:1px solid #555; padding:6px; }
+
+.topbar { margin-bottom: 15px; }
+
+h1 { margin-top: 0; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <button onclick="window.location.href='index.html'">🏠 Accueil</button>
+</div>
+
+<h1>📤 Export du planning</h1>
+
+<div>
+  <select id="loadSelect"></select>
+  <button onclick="loadPlan()">📂 Charger</button>
+  <button onclick="exportImage()" id="exportBtn" disabled>📸 Exporter en image</button>
+</div>
+
+<h2 id="planTitle"></h2>
+
+<div id="captureZone">
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Début</th>
+        <th>Fin</th>
+        <th>Pilote</th>
+        <th>Tours</th>
+      </tr>
+    </thead>
+    <tbody id="planTable"></tbody>
+  </table>
+</div>
+
+<script>
+function $(id){ return document.getElementById(id); }
+
+// -------- Temps --------
+function fmt(sec){
+  sec=((sec%86400)+86400)%86400;
+  let h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60);
+  return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
+}
+
+// -------- Charger la liste --------
+function refreshLoadList(){
+  let sel=$("loadSelect"); sel.innerHTML="";
+  Object.keys(localStorage)
+    .filter(k=>k.startsWith("iracing_plan_"))
+    .forEach(k=>{
+      let n=k.replace("iracing_plan_","");
+      let o=document.createElement("option");
+      o.value=n; o.textContent=n;
+      sel.appendChild(o);
+    });
+}
+
+// -------- Charger un planning --------
+let currentPlan = null;
+
+function loadPlan(){
+  let n = $("loadSelect").value;
+  if(!n) return alert("Aucune sauvegarde sélectionnée");
+
+  let raw = localStorage.getItem("iracing_plan_"+n);
+  if(!raw) return alert("Sauvegarde introuvable");
+
+  let data = JSON.parse(raw);
+
+  currentPlan = data.state.plan;
+
+  $("planTitle").textContent = "Planning : " + n;
+
+  renderPlan();
+  $("exportBtn").disabled = false;
+}
+
+// -------- Affichage --------
+function renderPlan(){
+  let tb = $("planTable");
+  tb.innerHTML = "";
+
+  if(!currentPlan) return;
+
+  currentPlan.forEach((r,i)=>{
+    let tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td>${fmt(r.start)}</td>
+      <td>${fmt(r.end)}</td>
+      <td>${r.driver}</td>
+      <td>${r.laps}</td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+// -------- Export --------
+function exportImage(){
+  if(!currentPlan) return;
+
+  let zone = $("captureZone");
+
+  html2canvas(zone, { backgroundColor: "#000" }).then(canvas=>{
+    let link = document.createElement("a");
+    link.download = "planning.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  });
+}
+
+// init
+refreshLoadList();
+</script>
+
+</body>
+</html>
