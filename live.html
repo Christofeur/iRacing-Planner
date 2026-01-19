@@ -105,6 +105,8 @@ let incidentIndex = null;
 let replannedFromIndex = null;
 let previousReplannedFromIndex = null;
 
+let raceEndTime = null; // heure de fin ABSOLUE de la course
+
 // -------- Charger la liste des sauvegardes --------
 function refreshLoadList(){
   let sel=$("loadSelect"); sel.innerHTML="";
@@ -131,13 +133,16 @@ function loadPlan(){
   // COPIE de travail
   workingPlan = JSON.parse(JSON.stringify(loadedData.state.plan));
 
+  // Heure de fin ABSOLUE = fin du dernier relais original
+  raceEndTime = loadedData.state.plan[loadedData.state.plan.length - 1].end;
+
   previousPlan = null;
   replannedFromIndex = null;
   previousReplannedFromIndex = null;
 
   $("undoBtn").disabled = true;
 
-  $("planTitle").textContent = "Planning : " + n;
+  $("planTitle").textContent = "Planning : " + n + " (fin course: " + fmt(raceEndTime) + ")";
 
   renderPlan();
 }
@@ -195,7 +200,6 @@ function applyReplan(index, newStartTime){
   // Sauvegarde pour undo
   previousPlan = JSON.parse(JSON.stringify(workingPlan));
   previousReplannedFromIndex = replannedFromIndex;
-
   $("undoBtn").disabled = false;
 
   // On garde tout avant l'incident
@@ -222,10 +226,17 @@ function applyReplan(index, newStartTime){
   let t = newStartTime;
 
   for(let i=0;i<driversOrder.length;i++){
+    if(t >= raceEndTime) break; // la course est finie
+
     let driver = driversOrder[i];
 
     let start = t;
     let end = start + stintDuration;
+
+    // Si on dépasse la fin de course, on COUPE le relais
+    if(end > raceEndTime){
+      end = raceEndTime;
+    }
 
     newPart.push({
       start: start,
@@ -233,6 +244,9 @@ function applyReplan(index, newStartTime){
       driver: driver,
       laps: originalPlan[index].laps
     });
+
+    // Si on a atteint la fin de course, on s'arrête
+    if(end >= raceEndTime) break;
 
     // pit avant relais suivant
     t = end + pitSec;
