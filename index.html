@@ -11,6 +11,16 @@ td, th { border:1px solid #555; padding:6px; }
 .bad { background:#802020; }
 .block { border:1px solid #444; padding:10px; margin-bottom:10px; }
 
+#ruleBanner {
+  display:none;
+  background:#a00000;
+  color:white;
+  padding:10px;
+  margin-bottom:15px;
+  font-weight:bold;
+  border-radius:6px;
+}
+
 .popupBG {
   position: fixed;
   inset: 0;
@@ -29,6 +39,8 @@ td, th { border:1px solid #555; padding:6px; }
 <body>
 
 <h1>iRacing Endurance Planner (version stable)</h1>
+
+<div id="ruleBanner"></div>
 
 <div class="block">
 <h2>Nom du planning</h2>
@@ -94,13 +106,8 @@ Temps de pit (secondes) <input type="number" id="pitSec" value="40">
 </div>
 
 <script>
-let state = {
-  name: "",
-  drivers: [],
-  plan: []
-};
-
-let editIndex = null;
+let state = { name:"", drivers:[], plan:[] };
+let editIndex=null;
 
 function $(id){ return document.getElementById(id); }
 
@@ -197,7 +204,7 @@ function generatePlan(){
 
   renderPlan();
   checkRules();
-  notifyIfRuleBroken();
+  notifyIfRuleBroken(true);
 }
 
 // ---------- Affichage ----------
@@ -240,7 +247,7 @@ function confirmEdit(){
   closeEdit();
   renderPlan();
   checkRules();
-  notifyIfRuleBroken();
+  notifyIfRuleBroken(true);
 }
 
 // ---------- Règle iRacing ----------
@@ -265,7 +272,7 @@ function checkRules(){
   });
 }
 
-function notifyIfRuleBroken(){
+function notifyIfRuleBroken(showPopup){
   let count={}; state.drivers.forEach(d=>count[d.name]=0);
   state.plan.forEach(r=>count[r.driver]+=r.laps);
 
@@ -276,12 +283,22 @@ function notifyIfRuleBroken(){
   let min=Math.floor(total/state.drivers.length/4);
 
   let bad=state.drivers.filter(d=>count[d.name]<min);
+  let banner=$("ruleBanner");
+
   if(bad.length){
-    alert("⚠️ Règle iRacing non respectée par :\n\n"+bad.map(d=>"- "+d.name).join("\n"));
+    let msg="⚠️ Règle iRacing non respectée par : "+bad.map(d=>d.name).join(", ");
+    banner.textContent=msg;
+    banner.style.display="block";
+    if(showPopup){
+      alert("⚠️ Règle iRacing non respectée par :\n\n"+bad.map(d=>"- "+d.name).join("\n"));
+    }
+  } else {
+    banner.style.display="none";
+    banner.textContent="";
   }
 }
 
-// ---------- Sauvegarde ----------
+// ---------- Sauvegarde / Chargement / Suppression ----------
 function savePlan(){
   let name=$("planName").value.trim();
   if(!name) return alert("Donne un nom au planning");
@@ -317,7 +334,7 @@ function loadSelectedPlan(){
   state=data.state;
   $("planName").value=state.name;
   Object.entries(data.form).forEach(([k,v])=>$(k).value=v);
-  renderDrivers(); renderPlan(); checkRules(); notifyIfRuleBroken();
+  renderDrivers(); renderPlan(); checkRules(); notifyIfRuleBroken(false);
 }
 
 function deleteSelectedPlan(){
