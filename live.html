@@ -5,14 +5,26 @@
 <title>iRacing Live Manager</title>
 <style>
 body { font-family: Arial, sans-serif; padding:20px; background:#111; color:#eee; }
-select, button { padding:5px; margin:5px; }
+select, button, input { padding:5px; margin:5px; }
 
 table { border-collapse: collapse; margin-top:20px; }
 td, th { border:1px solid #555; padding:6px; }
 .block { border:1px solid #444; padding:10px; margin-bottom:10px; }
 
-.topbar {
-  margin-bottom: 15px;
+.topbar { margin-bottom: 15px; }
+
+.popupBG {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.popup {
+  background: #222;
+  padding: 20px;
+  border-radius: 10px;
 }
 </style>
 </head>
@@ -40,20 +52,42 @@ td, th { border:1px solid #555; padding:6px; }
   <th>Fin</th>
   <th>Pilote</th>
   <th>Tours</th>
+  <th>Action</th>
 </tr>
 </thead>
 <tbody id="planTable"></tbody>
 </table>
 
+<!-- POPUP INCIDENT -->
+<div class="popupBG" id="incidentPopup">
+  <div class="popup">
+    <h3>🚨 Incident</h3>
+    <p>Heure réelle de sortie des stands :</p>
+    <input type="time" id="incidentTime">
+    <br><br>
+    <button onclick="confirmIncident()">Recalculer à partir d'ici</button>
+    <button onclick="closeIncident()">Annuler</button>
+  </div>
+</div>
+
 <script>
 function $(id){ return document.getElementById(id); }
 
 // -------- Temps --------
+function parseHM(t){
+  let [h,m]=t.split(":").map(Number);
+  return h*3600+m*60;
+}
 function fmt(sec){
   sec=((sec%86400)+86400)%86400;
   let h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60);
   return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
 }
+
+// -------- Données --------
+let loadedData = null;
+let workingPlan = null; // copie modifiable pour le live
+let incidentIndex = null;
 
 // -------- Charger la liste des sauvegardes --------
 function refreshLoadList(){
@@ -68,8 +102,6 @@ function refreshLoadList(){
     });
 }
 
-let loadedData = null;
-
 // -------- Charger un planning --------
 function loadPlan(){
   let n = $("loadSelect").value;
@@ -80,19 +112,22 @@ function loadPlan(){
 
   loadedData = JSON.parse(raw);
 
+  // On fait une COPIE de travail du plan
+  workingPlan = JSON.parse(JSON.stringify(loadedData.state.plan));
+
   $("planTitle").textContent = "Planning : " + n;
 
   renderPlan();
 }
 
-// -------- Affichage du planning --------
+// -------- Affichage --------
 function renderPlan(){
   let tb = $("planTable");
   tb.innerHTML = "";
 
-  if(!loadedData || !loadedData.state || !loadedData.state.plan) return;
+  if(!workingPlan) return;
 
-  loadedData.state.plan.forEach((r,i)=>{
+  workingPlan.forEach((r,i)=>{
     let tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${i+1}</td>
@@ -100,9 +135,81 @@ function renderPlan(){
       <td>${fmt(r.end)}</td>
       <td>${r.driver}</td>
       <td>${r.laps}</td>
+      <td><button onclick="openIncident(${i})">🚨 Incident</button></td>
     `;
     tb.appendChild(tr);
   });
+}
+
+// -------- Incident --------
+function openIncident(i){
+  incidentIndex = i;
+  $("incidentTime").value = "";
+  $("incidentPopup").style.display = "flex";
+}
+
+function closeIncident(){
+  $("incidentPopup").style.display = "none";
+  incidentIndex = null;
+}
+
+function confirmIncident(){
+  let t = $("incidentTime").value;
+  if(!t) return alert("Entre une heure");
+
+  let newStart = parseHM(t);
+
+  applyReplan(incidentIndex, newStart);
+
+  closeIncident();
+}
+
+// -------- Replanification --------
+function applyReplan(index, newStartTime){
+  // On garde tout avant l'incident
+  let before = workingPlan.slice(0, index);
+
+  // On récupère les infos utiles
+  let originalPlan = loadedData.state.plan;
+  let form = loadedData.form;
+
+  // Durée d'un relais
+  let first = originalPlan[0];
+  let stintDuration = first.end - first.start;
+
+  let pitSec = +form.pitSec || 0;
+
+  // Ordre des pilotes à partir de l'index
+  let driversOrder = [];
+  for(let i=index;i<originalPlan.length;i++){
+    driversOrder.push(originalPlan[i].driver);
+  }
+
+  // On reconstruit la suite
+  let newPart = [];
+  let t = newStartTime;
+
+  for(let i=0;i<driversOrder.length;i++){
+    let driver = driversOrder[i];
+
+    let start = t;
+    let end = start + stintDuration;
+
+    newPart.push({
+      start: start,
+      end: end,
+      driver: driver,
+      laps: originalPlan[index].laps
+    });
+
+    // pit avant relais suivant
+    t = end + pitSec;
+  }
+
+  // Nouveau planning
+  workingPlan = before.concat(newPart);
+
+  renderPlan();
 }
 
 // init
