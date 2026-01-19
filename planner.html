@@ -230,15 +230,21 @@ function generatePlan(){
   let stintSec=laps*lapSec;
   $("info").textContent=`Relais = ${laps} tours ≈ ${Math.round(stintSec/60)} min`;
 
-  state.plan=[];
-  let t=start, elapsed=0, idx=0, first=true;
-
-  state.plan = [];
+state.plan = [];
 
 let currentTime = start;
 let raceEndTime = start + raceHours * 3600;
 
-while(currentTime < raceEndTime){
+// Sécurité : éviter division par zéro / valeurs invalides
+if(!stintSec || stintSec <= 0 || !isFinite(stintSec)){
+  alert("Erreur: durée de relais invalide. Vérifie carburant / conso / temps au tour.");
+  return;
+}
+
+// Sécurité : éviter boucle infinie
+let safety = 0;
+
+while(currentTime < raceEndTime && safety < 1000){
 
   let startRel = currentTime;
   let endRel = startRel + stintSec;
@@ -255,17 +261,19 @@ while(currentTime < raceEndTime){
     laps
   });
 
-  // On avance le temps
+  // Avancer le temps
   currentTime = endRel;
 
   // Pilote suivant
   idx = (idx + 1) % state.drivers.length;
+
+  safety++;
 }
 
-
-
-  updateAll();
+if(safety >= 1000){
+  alert("Erreur interne: boucle infinie détectée dans la génération du planning.");
 }
+
 
 // ---------- Affichage ----------
 function renderPlan(){
@@ -408,6 +416,7 @@ updateSOF();
 
 </body>
 </html>
+
 
 
 
