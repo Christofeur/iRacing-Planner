@@ -2,127 +2,113 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Ascendia Racing — Planner</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link rel="stylesheet" href="ascendia.css">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
-
-<style>
-body {
-  font-family: "Orbitron", sans-serif;
-}
-
-/* Layout 2 colonnes */
-.main-layout {
-  display: grid;
-  grid-template-columns: 360px 1fr;
-  gap: 20px;
-  height: calc(100vh - 70px);
-}
-
-@media (max-width: 900px) {
-  .main-layout {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-}
-
-.left-col {
-  overflow-y: auto;
-  padding-right: 5px;
-}
-
-.right-col {
-  overflow-y: auto;
-}
-
-.section {
-  margin-bottom: 15px;
-}
-</style>
-
+<title>Ascendia Racing — Endurance Planner</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<header>
-  <div class="title">
-  <img src="logo.png">
-  Ascendia Racing — Endurance Planner
+<!-- SMOKE -->
+<div class="smoke-layer">
+  <div class="smoke s1"></div>
+  <div class="smoke s2"></div>
+  <div class="smoke s3"></div>
 </div>
 
-  <div class="nav">
-    <button onclick="window.location.href='index.html'">🏠 Accueil</button>
-    <button onclick="window.location.href='live.html'">🟢 Live</button>
-    <button onclick="window.location.href='export.html'">📤 Export</button>
+<!-- HEADER -->
+<header class="topbar">
+  <div class="brand">
+    <img src="logo.png" class="logo">
+    <span>Ascendia Racing — Endurance Planner</span>
+  </div>
+  <div class="top-actions">
+    <a href="index.html" class="btn blue">🏠 Accueil</a>
+    <a href="live.html" class="btn green">🟢 Live</a>
+    <button class="btn red" onclick="exportPlan()">📤 Export</button>
   </div>
 </header>
 
-<div class="container">
-
+<!-- MAIN -->
 <div class="main-layout">
 
-  <!-- COLONNE GAUCHE -->
-  <div class="left-col">
+  <!-- LEFT -->
+  <div class="left-panel">
 
-    <div id="sofBox" class="panel section">🏁 SOF équipe : -</div>
+    <div class="card">
+      <div id="sofBox">🏁 SOF équipe : -</div>
+    </div>
 
-    <div class="panel section">
-      <h2>Nom du planning</h2>
+    <div class="card">
+      <h3>Nom du planning</h3>
       <input id="planName" placeholder="Ex: Spa 24h - Ascendia">
     </div>
 
-    <div class="panel section">
-      <h2>Pilotes</h2>
-      Nom : <input id="driverName"><br><br>
-      iR : <input id="driverIR" type="number" value="1500"><br><br>
-      <button onclick="addDriver()">+ Ajouter</button>
+    <div class="card">
+      <h3>Pilotes</h3>
+      Nom:
+      <input id="driverName">
+      iR:
+      <input id="driverIR" type="number" value="1500">
+      <button class="btn blue" onclick="addDriver()">+ Ajouter</button>
       <div id="drivers"></div>
     </div>
 
-    <div class="panel section">
-      <h2>Course</h2>
-      Heure départ: <input type="time" id="startTime" value="13:00"><br><br>
-      Durée (h): <input type="number" id="raceHours" value="6"><br><br>
-      Type relais:
+    <div class="card">
+      <h3>Course</h3>
+      Heure départ <span class="unit">(HH:MM)</span>
+      <input type="time" id="startTime" value="13:00">
+
+      Durée <span class="unit">(h)</span>
+      <input id="raceHours" type="number" value="6">
+
+      Type relais
       <select id="stintMode">
         <option value="simple">Simple</option>
         <option value="double">Double</option>
       </select>
     </div>
 
-    <div class="panel section">
-      <h2>Voiture / Carburant</h2>
-      Capacité réservoir (L): <input id="fuelCap" type="number" value="120"><br><br>
-      Conso par tour (L): <input id="fuelLap" type="number" value="3.2"><br><br>
-      Temps au tour (mm:ss): <input id="lapTime" value="01:45"><br><br>
-      Temps pit de l'entrée à la sortie (secondes): <input id="pitSec" type="number" value="40">
+    <div class="card">
+      <h3>Voiture / Carburant</h3>
+
+      Capacité réservoir <span class="unit">(L)</span>
+      <input id="fuelCap" type="number" value="120">
+
+      Conso par tour <span class="unit">(L)</span>
+      <input id="fuelLap" type="number" step="0.1" value="3.2">
+
+      Temps au tour <span class="unit">(mm:ss)</span>
+      <input id="lapTime" value="01:45">
+
+      Temps pit entrée/sortie <span class="unit">(sec)</span>
+      <input id="pitSec" type="number" value="40">
     </div>
 
-    <div class="panel section">
-      <button onclick="generatePlan()">📋 Générer le planning</button>
-      <button onclick="savePlan()">💾 Sauvegarder</button>
-      <br><br>
+    <div class="card">
+      <button class="btn green" onclick="generatePlan()">⚙️ Générer le planning</button>
+      <button class="btn blue" onclick="savePlan()">💾 Sauvegarder</button>
+
       <select id="loadSelect"></select>
-      <button onclick="loadSelectedPlan()">📂 Charger</button>
-      <button onclick="deleteSelectedPlan()">🗑️ Supprimer</button>
+      <button class="btn orange" onclick="loadSelectedPlan()">📂 Charger</button>
+      <button class="btn red" onclick="deleteSelectedPlan()">🗑 Supprimer</button>
     </div>
 
-    <div id="info"></div>
-    <div id="ruleBanner" style="display:none"></div>
+    <div class="card">
+      <div id="info"></div>
+    </div>
 
-  </div>
-
-  <!-- COLONNE DROITE -->
-  <div class="right-col">
-
-    <div class="panel section">
-      <h2>Vérifications règle iRacing</h2>
+    <div class="card">
       <div id="checks"></div>
     </div>
 
-    <div class="panel section">
-      <h2>Planning</h2>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-panel">
+
+    <div id="ruleBanner" class="banner"></div>
+
+    <div class="card">
+      <h3>Planning</h3>
       <table>
         <thead>
           <tr>
@@ -140,15 +126,15 @@ body {
   </div>
 
 </div>
-</div>
 
-<!-- Popup édition -->
-<div class="popup" id="editPopup">
-  <div class="box">
-    <h3>Changer le pilote</h3>
-    <select id="editSelect"></select><br><br>
-    <button onclick="confirmEdit()">Valider</button>
-    <button onclick="closeEdit()">Annuler</button>
+<!-- POPUP EDIT -->
+<div id="editPopup" class="popup">
+  <div class="popup-box">
+    <h3>Changer de pilote</h3>
+    <select id="editSelect"></select>
+    <br><br>
+    <button class="btn green" onclick="confirmEdit()">Valider</button>
+    <button class="btn red" onclick="closeEdit()">Annuler</button>
   </div>
 </div>
 
@@ -462,6 +448,7 @@ updateSOF();
 
 </body>
 </html>
+
 
 
 
