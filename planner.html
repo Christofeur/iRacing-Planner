@@ -92,7 +92,6 @@ Type relais
 Capacité réservoir (L) <input type="number" id="fuelCap" value="120"><br>
 Conso par tour (L) <input type="number" id="fuelLap" value="3.2" step="0.01"><br>
 Temps au tour (mm:ss) <input id="lapTime" value="01:45"><br>
-Temps de pit (secondes) <input type="number" id="pitSec" value="40">
 </div>
 
 <div class="block">
@@ -237,27 +236,17 @@ function generatePlan(){
   state.plan = [];
 
 let currentTime = start;
-let totalDuration = raceHours * 3600;
-let elapsedTime = 0;
-let firstLoop = true;
+let raceEndTime = start + raceHours * 3600;
 
-// Nombre de relais possibles
-let maxStints = Math.floor(totalDuration / stintSec);
-
-// Génère les relais jusqu'à ce que le temps soit écoulé
-for(let i=0; i < maxStints; i++){
-  if(!firstLoop){
-    // Pit entre chaque relais
-    currentTime += pitSec;
-    elapsedTime += pitSec;
-  }
-  firstLoop = false;
-
-  // Si on dépasse la durée totale, on arrête
-  if(elapsedTime + stintSec > totalDuration) break;
+while(currentTime < raceEndTime){
 
   let startRel = currentTime;
   let endRel = startRel + stintSec;
+
+  // On coupe le dernier relais s'il dépasse la fin de course
+  if(endRel > raceEndTime){
+    endRel = raceEndTime;
+  }
 
   state.plan.push({
     start: startRel,
@@ -266,11 +255,13 @@ for(let i=0; i < maxStints; i++){
     laps
   });
 
+  // On avance le temps
   currentTime = endRel;
-  elapsedTime += stintSec;
 
+  // Pilote suivant
   idx = (idx + 1) % state.drivers.length;
 }
+
 
 
   updateAll();
@@ -417,6 +408,7 @@ updateSOF();
 
 </body>
 </html>
+
 
 
 
