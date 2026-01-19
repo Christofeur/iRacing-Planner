@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>iRacing Endurance Planner (Stable + SOF)</title>
+<link rel="stylesheet" href="style.css">
 <style>
 body { font-family: Arial, sans-serif; padding:20px; background:#111; color:#eee; }
 input, select, button { margin:3px; padding:5px; }
@@ -52,6 +53,16 @@ td, th { border:1px solid #555; padding:6px; }
 </style>
 </head>
 <body>
+<header>
+  <div class="title">🏁 iRacing Endurance Planner</div>
+  <div class="nav">
+    <button onclick="window.location.href='index.html'">🏠 Accueil</button>
+    <button onclick="window.location.href='live.html'">🟢 Live Manager</button>
+    <button onclick="window.location.href='export.html'">📤 Export</button>
+  </div>
+</header>
+
+<div class="container">
 
 <div style="margin-bottom:15px;">
   <button onclick="window.location.href='index.html'">🏠 Accueil</button>
@@ -438,6 +449,7 @@ updateSOF();
 
 </body>
 </html>
+
 
 
 
