@@ -268,7 +268,7 @@ function confirmEdit(){
   }
   stint.driver=name;
   closeEdit();
-  updateAll(true);
+  updateAll();
 }
 
 // ---------- Règle + Bandeau + Popup ----------
@@ -286,7 +286,7 @@ function checkRules(){
   });
 }
 
-function notifyIfRuleBroken(showPopup){
+function notifyIfRuleBroken(){
   let rule = computeRuleStatus();
   let bad = state.drivers.filter(d=>rule.count[d.name] < rule.min);
   let banner=$("ruleBanner");
@@ -295,9 +295,8 @@ function notifyIfRuleBroken(showPopup){
     let msg="⚠️ Règle iRacing non respectée par : "+bad.map(d=>d.name).join(", ");
     banner.textContent=msg;
     banner.style.display="block";
-    if(showPopup){
-      alert("⚠️ Règle iRacing non respectée par :\n\n"+bad.map(d=>"- "+d.name).join("\n"));
-    }
+
+    alert("⚠️ Règle iRacing non respectée par :\n\n"+bad.map(d=>"- "+d.name).join("\n"));
   } else {
     banner.style.display="none";
     banner.textContent="";
@@ -305,10 +304,10 @@ function notifyIfRuleBroken(showPopup){
 }
 
 // ---------- Mise à jour globale ----------
-function updateAll(showPopup=false){
+function updateAll(){
   renderPlan();
   checkRules();
-  notifyIfRuleBroken(showPopup);
+  notifyIfRuleBroken();
 }
 
 // ---------- Sauvegarde / Chargement / Suppression ----------
@@ -348,7 +347,7 @@ function loadSelectedPlan(){
   $("planName").value=state.name;
   Object.entries(data.form).forEach(([k,v])=>$(k).value=v);
   renderDrivers();
-  updateAll(false);
+  updateAll();
 }
 
 function deleteSelectedPlan(){
