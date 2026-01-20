@@ -2,89 +2,76 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>iRacing Live Manager</title>
-<style>
-body { font-family: Arial, sans-serif; padding:20px; background:#111; color:#eee; }
-select, button, input { padding:5px; margin:5px; }
-
-table { border-collapse: collapse; margin-top:20px; }
-td, th { border:1px solid #555; padding:6px; }
-.block { border:1px solid #444; padding:10px; margin-bottom:10px; }
-
-.topbar { margin-bottom: 15px; }
-
-.replanned {
-  background: #1f3550;
-}
-
-.replannedIcon {
-  margin-left: 6px;
-  color: #7fb7ff;
-  font-weight: bold;
-}
-
-/* Popup */
-.popupBG {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.7);
-  display: none;
-  align-items: center;
-  justify-content: center;
-}
-.popup {
-  background: #222;
-  padding: 20px;
-  border-radius: 10px;
-}
-</style>
+<title>Ascendia Racing - Live Manager</title>
+<link rel="stylesheet" href="ascendia.css">
 </head>
 <body>
 
-<div class="topbar">
-  <button onclick="window.location.href='index.html'">🏠 Accueil</button>
-  <button onclick="window.location.href='planner.html'">🛠️ Planner</button>
-  <button onclick="window.location.href='export.html'">📤 Export du planing</button>
+<div id="topBar">
+  <div class="teamBrand">
+    <img src="logo.png" alt="Ascendia Racing" class="teamLogo">
+    <span class="teamName">Ascendia Racing</span>
+  </div>
+</div>
+
+<!-- TOP RIGHT NAV (IDENTIQUE PLANNER) -->
+<div class="topNav">
+  <button onclick="location.href='index.html'">🏠 Accueil</button>
+  <button onclick="location.href='planner.html'">🛠 Planner</button>
+  <button onclick="location.href='export.html'">📤 Export</button>
   <button id="undoBtn" onclick="undoReplan()" disabled>↩️ Annuler le dernier recalcul</button>
 </div>
 
-<h1>🎮 Live Manager</h1>
+<h1 class="mainTitle">🟢 Live Manager</h1>
 
-<div class="block">
-  <h2>Charger un planning</h2>
-  <select id="loadSelect"></select>
-  <button onclick="loadPlan()">📂 Charger</button>
+<div class="appContainer">
+
+  <!-- ================== COLONNE GAUCHE ================== -->
+  <div id="leftPanel">
+
+    <div class="block">
+      <h2>Charger un planning</h2>
+      <select id="loadSelect"></select><br><br>
+      <button onclick="loadPlan()">📂 Charger</button>
+    </div>
+
+  </div>
+
+  <!-- ================== COLONNE DROITE ================== -->
+  <div id="rightPanel">
+
+    <h2 class="centerTitle" id="planTitle"></h2>
+
+    <table class="planningTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Début</th>
+          <th>Fin</th>
+          <th>Pilote</th>
+          <th>Tours</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="planTable"></tbody>
+    </table>
+
+  </div>
+
 </div>
-
-<h2 id="planTitle"></h2>
-
-<table>
-<thead>
-<tr>
-  <th>#</th>
-  <th>Début</th>
-  <th>Fin</th>
-  <th>Pilote</th>
-  <th>Tours</th>
-  <th>Action</th>
-</tr>
-</thead>
-<tbody id="planTable"></tbody>
-</table>
 
 <!-- POPUP INCIDENT -->
 <div class="popupBG" id="incidentPopup">
   <div class="popup">
     <h3>🚨 Incident</h3>
     <p>Heure réelle de sortie des stands :</p>
-    <input type="time" id="incidentTime">
-    <br><br>
-    <button onclick="confirmIncident()">Recalculer à partir d'ici</button>
+    <input type="time" id="incidentTime"><br><br>
+    <button onclick="confirmIncident()">Recalculer</button>
     <button onclick="closeIncident()">Annuler</button>
   </div>
 </div>
 
-<script>
+  <script>
 function $(id){ return document.getElementById(id); }
 
 // -------- Temps --------
@@ -100,24 +87,52 @@ function fmt(sec){
 
 // -------- Données --------
 let loadedData = null;
-let workingPlan = null;      // planning live courant
-let previousPlan = null;     // sauvegarde pour undo
+let workingPlan = null;
+let previousPlan = null;
 let incidentIndex = null;
 
 let replannedFromIndex = null;
 let previousReplannedFromIndex = null;
 
-let raceEndTime = null; // heure de fin ABSOLUE de la course
+let raceEndTime = null; // FIN OFFICIELLE FIXE
+
+// -------- Nettoyage STRICT du planning --------
+function clampPlanToRaceEnd(){
+  if(!workingPlan) return;
+
+  let newPlan = [];
+
+  for(let r of workingPlan){
+    if(r.start >= raceEndTime) break;
+
+    let start = r.start;
+    let end = Math.min(r.end, raceEndTime);
+
+    if(end <= start) break;
+
+    newPlan.push({
+      ...r,
+      start: start,
+      end: end
+    });
+
+    if(end >= raceEndTime) break;
+  }
+
+  workingPlan = newPlan;
+}
 
 // -------- Charger la liste des sauvegardes --------
 function refreshLoadList(){
-  let sel=$("loadSelect"); sel.innerHTML="";
+  let sel=$("loadSelect"); 
+  sel.innerHTML="";
   Object.keys(localStorage)
     .filter(k=>k.startsWith("iracing_plan_"))
     .forEach(k=>{
       let n=k.replace("iracing_plan_","");
       let o=document.createElement("option");
-      o.value=n; o.textContent=n;
+      o.value=n; 
+      o.textContent=n;
       sel.appendChild(o);
     });
 }
@@ -132,11 +147,11 @@ function loadPlan(){
 
   loadedData = JSON.parse(raw);
 
-  // COPIE de travail
   workingPlan = JSON.parse(JSON.stringify(loadedData.state.plan));
 
-  // Heure de fin ABSOLUE = fin du dernier relais original
-  raceEndTime = loadedData.state.plan[loadedData.state.plan.length - 1].end;
+  let start = parseHM(loadedData.form.startTime);
+  let raceHours = +loadedData.form.raceHours;
+  raceEndTime = start + raceHours * 3600;
 
   previousPlan = null;
   replannedFromIndex = null;
@@ -144,8 +159,10 @@ function loadPlan(){
 
   $("undoBtn").disabled = true;
 
-  $("planTitle").textContent = "Planning : " + n + " (fin course: " + fmt(raceEndTime) + ")";
+  $("planTitle").textContent = 
+    "Planning : " + n + " (fin course: " + fmt(raceEndTime) + ")";
 
+  clampPlanToRaceEnd();
   renderPlan();
 }
 
@@ -191,7 +208,6 @@ function confirmIncident(){
   if(!t) return alert("Entre une heure");
 
   let newStart = parseHM(t);
-
   applyReplan(incidentIndex, newStart);
 
   closeIncident();
@@ -199,71 +215,79 @@ function confirmIncident(){
 
 // -------- Replanification --------
 function applyReplan(index, newStartTime){
-  // Sauvegarde pour undo
+  if(!workingPlan) return;
+
   previousPlan = JSON.parse(JSON.stringify(workingPlan));
   previousReplannedFromIndex = replannedFromIndex;
   $("undoBtn").disabled = false;
 
-  // On garde tout avant l'incident
   let before = workingPlan.slice(0, index);
 
-  // Infos depuis la sauvegarde initiale
-  let originalPlan = loadedData.state.plan;
-  let form = loadedData.form;
-
-  // Durée d'un relais (supposée constante)
-  let first = originalPlan[0];
-  let stintDuration = first.end - first.start;
-
-  let pitSec = +form.pitSec || 0;
-
-  // Ordre des pilotes à partir de l'index ORIGINAL
-  let driversOrder = [];
-  for(let i=index;i<originalPlan.length;i++){
-    driversOrder.push(originalPlan[i].driver);
+  if(before.length){
+    let last = before[before.length - 1];
+    if(newStartTime < last.end){
+      newStartTime = last.end;
+    }
   }
 
-  // Reconstruction
+  if(newStartTime >= raceEndTime){
+    workingPlan = before;
+    clampPlanToRaceEnd();
+    replannedFromIndex = index;
+    renderPlan();
+    return;
+  }
+
+  let basePlan = workingPlan;
+
+  let refIndex = Math.max(0, index - 1);
+  let ref = basePlan[refIndex];
+
+  let stintDuration = ref.end - ref.start;
+  let lapTimeSec = stintDuration / ref.laps;
+
+  let driversOrder = [];
+
+  for(let i=index; i < basePlan.length; i++){
+    driversOrder.push(basePlan[i].driver);
+  }
+
+  if(driversOrder.length === 0 && basePlan[index]){
+    driversOrder.push(basePlan[index].driver);
+  }
+
   let newPart = [];
   let t = newStartTime;
 
   for(let i=0;i<driversOrder.length;i++){
-    if(t >= raceEndTime) break; // la course est finie
+    if(t >= raceEndTime) break;
 
     let driver = driversOrder[i];
 
     let start = t;
-    let end = start + stintDuration;
+    let end = Math.min(start + stintDuration, raceEndTime);
 
-    // Si on dépasse la fin de course, on COUPE le relais
-    if(end > raceEndTime){
-      end = raceEndTime;
-    }
-  let lapTimeSec = (originalPlan[0].end - originalPlan[0].start) / originalPlan[0].laps;
-let realDuration = end - start;
-let realLaps = Math.floor(realDuration / lapTimeSec);
+    let realDuration = end - start;
+    if(realDuration <= 0) break;
 
-newPart.push({
-  start: start,
-  end: end,
-  driver: driver,
-  laps: realLaps
-});
+    let realLaps = Math.floor(realDuration / lapTimeSec);
 
-// Si on a atteint la fin de course, on s'arrête
-if(end >= raceEndTime) break;
+    newPart.push({
+      start: start,
+      end: end,
+      driver: driver,
+      laps: realLaps
+    });
 
-// On avance le temps SANS AJOUTER DE PIT
-t = end;
+    if(end >= raceEndTime) break;
 
-
-    
+    t = end;
   }
 
-  // Nouveau planning live
   workingPlan = before.concat(newPart);
 
-  // Marquage visuel
+  clampPlanToRaceEnd();
+
   replannedFromIndex = index;
 
   renderPlan();
@@ -281,12 +305,13 @@ function undoReplan(){
 
   $("undoBtn").disabled = true;
 
+  clampPlanToRaceEnd();
   renderPlan();
 }
 
-// init
+// -------- INIT --------
 refreshLoadList();
-</script>
+  </script>
 
 </body>
 </html>

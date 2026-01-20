@@ -2,121 +2,104 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>iRacing Endurance Planner (Stable + SOF)</title>
-<style>
-body { font-family: Arial, sans-serif; padding:20px; background:#111; color:#eee; }
-input, select, button { margin:3px; padding:5px; }
-table { border-collapse: collapse; margin-top:10px; }
-td, th { border:1px solid #555; padding:6px; }
-.bad { background:#802020; }
-.block { border:1px solid #444; padding:10px; margin-bottom:10px; }
-
-#ruleBanner {
-  display:none;
-  background:#a00000;
-  color:white;
-  padding:10px;
-  margin-bottom:15px;
-  font-weight:bold;
-  border-radius:6px;
-}
-
-#sofBox {
-  background:#003366;
-  padding:10px;
-  margin-bottom:15px;
-  border-radius:6px;
-  font-size:18px;
-  font-weight:bold;
-}
-
-.warnIcon {
-  color: orange;
-  font-weight: bold;
-  margin-left: 6px;
-}
-
-.popupBG {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.7);
-  display: none;
-  align-items: center;
-  justify-content: center;
-}
-.popup {
-  background: #222;
-  padding: 20px;
-  border-radius: 10px;
-}
-</style>
+<title>Ascendia Racing - Planner</title>
+<link rel="stylesheet" href="ascendia.css">
 </head>
 <body>
 
-<div style="margin-bottom:15px;">
-  <button onclick="window.location.href='index.html'">🏠 Accueil</button>
-  <button onclick="window.location.href='live.html'">🎮 Live Manager</button>
-  <button onclick="window.location.href='export.html'">📤 Export du planning</button>
+<div id="topBar">
+  <div class="teamBrand">
+    <img src="logo.png" alt="Ascendia Racing" class="teamLogo">
+    <span class="teamName">Ascendia Racing</span>
+  </div>
 </div>
 
-<h1>iRacing Endurance Planner</h1>
-
-<div id="sofBox">🏁 SOF équipe : -</div>
-<div id="ruleBanner"></div>
-
-<div class="block">
-<h2>Nom du planning</h2>
-<input id="planName" placeholder="Ex: Spa 24h - Team X">
+<!-- TOP RIGHT NAV -->
+<div class="topNav">
+  <button onclick="location.href='index.html'">🏠 Accueil</button>
+  <button onclick="location.href='live.html'">🟢 Live</button>
+  <button onclick="location.href='export.html'">📤 Export</button>
 </div>
 
-<div class="block">
-<h2>Pilotes</h2>
-<input id="driverName" placeholder="Nom du pilote">
-<input id="driverIR" type="number" placeholder="iRating" value="1500">
-<button onclick="addDriver()">➕ Ajouter</button>
-<div id="drivers"></div>
+<h1 class="mainTitle">iRacing Endurance Planner</h1>
+
+<div class="appContainer">
+
+  <!-- ================== COLONNE GAUCHE ================== -->
+  <div id="leftPanel">
+
+    <div id="sofBox">🏁 SOF équipe : -</div>
+    <div id="ruleBanner"></div>
+
+    <div class="block">
+      <h2>Course</h2>
+      <input id="planName" placeholder="Ex: Spa 24h - Team X">
+    </div>
+
+    <div class="block">
+      <h2>Pilotes</h2>
+      <input id="driverName" placeholder="Nom du pilote">
+      <input id="driverIR" type="number" placeholder="iRating" value="1500">
+      <button onclick="addDriver()">➕ Ajouter</button>
+      <div id="drivers"></div>
+    </div>
+
+    <div class="block">
+      <h2>Course</h2>
+      Heure départ <input type="time" id="startTime" value="13:00"><br>
+      Durée (heures) <input type="number" id="raceHours" value="6"><br>
+      Type relais 
+      <select id="stintMode">
+        <option value="single">Simple</option>
+        <option value="double">Double</option>
+      </select>
+    </div>
+
+    <div class="block">
+      <h2>Carburant</h2>
+      Capacité réservoir (L) <input type="number" id="fuelCap" value="120"><br>
+      Conso par tour (L) <input type="number" id="fuelLap" value="3.2" step="0.01"><br>
+      Temps au tour (mm:ss) <input id="lapTime" value="01:45"><br>
+      Pit Entrée / Sortie (secondes) <input type="number" id="pitSec" value="40">
+    </div>
+
+    <div class="block">
+      <button onclick="generatePlan()">📋 Générer le planning</button>
+      <button onclick="savePlan()">💾 Sauvegarder</button>
+      <br><br>
+      <select id="loadSelect"></select>
+      <button onclick="loadSelectedPlan()">📂 Charger</button>
+      <button onclick="deleteSelectedPlan()">🗑️ Supprimer</button>
+    </div>
+
+    <p id="info"></p>
+
+  </div>
+
+  <!-- ================== COLONNE DROITE ================== -->
+  <div id="rightPanel">
+
+    <h2 class="centerTitle">Planning</h2>
+
+    <table class="planningTable">
+      <thead>
+        <tr>
+          <th>Début</th>
+          <th>Fin</th>
+          <th>Pilote</th>
+          <th>Tours</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="planTable"></tbody>
+    </table>
+
+    <h2 class="centerTitle">Règle iRacing</h2>
+    <div id="checks" class="ruleBox"></div>
+
+  </div>
+
 </div>
-
-<div class="block">
-<h2>Course</h2>
-Heure départ <input type="time" id="startTime" value="13:00"><br>
-Durée (heures) <input type="number" id="raceHours" value="6"><br>
-Type relais 
-<select id="stintMode">
-  <option value="single">Simple</option>
-  <option value="double">Double</option>
-</select>
-</div>
-
-<div class="block">
-<h2>Carburant</h2>
-Capacité réservoir (L) <input type="number" id="fuelCap" value="120"><br>
-Conso par tour (L) <input type="number" id="fuelLap" value="3.2" step="0.01"><br>
-Temps au tour (mm:ss) <input id="lapTime" value="01:45"><br>
-Temps de pit (secondes) <input type="number" id="pitSec" value="40">
-</div>
-
-<div class="block">
-<button onclick="generatePlan()">📋 Générer le planning</button>
-<button onclick="savePlan()">💾 Sauvegarder</button>
-<br><br>
-<select id="loadSelect"></select>
-<button onclick="loadSelectedPlan()">📂 Charger</button>
-<button onclick="deleteSelectedPlan()">🗑️ Supprimer</button>
-</div>
-
-<p id="info"></p>
-
-<h2>Planning</h2>
-<table>
-<thead>
-<tr><th>Début</th><th>Fin</th><th>Pilote</th><th>Tours</th><th>Action</th></tr>
-</thead>
-<tbody id="planTable"></tbody>
-</table>
-
-<h2>Règle iRacing</h2>
-<div id="checks"></div>
 
 <!-- POPUP EDIT -->
 <div class="popupBG" id="editPopup">
@@ -137,6 +120,7 @@ function $(id){ return document.getElementById(id); }
 // ---------- SOF ----------
 function updateSOF(){
   let box = $("sofBox");
+  if(!box) return;
   if(state.drivers.length === 0){
     box.textContent = "🏁 SOF équipe : -";
     return;
@@ -155,6 +139,12 @@ function fmt(sec){
   return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
 }
 
+// 🔒 Clamp absolu de fin de course
+function clampEndTime(t, start, totalRaceSec){
+  let maxEnd = start + totalRaceSec;
+  return Math.min(t, maxEnd);
+}
+
 // ---------- Pilotes ----------
 function addDriver(){
   let n=$("driverName").value.trim();
@@ -168,7 +158,9 @@ function addDriver(){
 }
 
 function renderDrivers(){
-  let d=$("drivers"); d.innerHTML="";
+  let d=$("drivers"); 
+  if(!d) return;
+  d.innerHTML="";
   state.drivers.forEach((p,i)=>{
     let div=document.createElement("div");
     div.className="block";
@@ -202,9 +194,10 @@ function isAvailable(driver,s,e){
   return true;
 }
 
-// ---------- Outils règle ----------
+// ---------- Règle ----------
 function computeRuleStatus(){
-  let count={}; state.drivers.forEach(d=>count[d.name]=0);
+  let count={}; 
+  state.drivers.forEach(d=>count[d.name]=0);
   state.plan.forEach(r=>count[r.driver]+=r.laps);
 
   let raceHours=+$("raceHours").value;
@@ -228,46 +221,71 @@ function generatePlan(){
   let lapSec=lm*60+ls;
   let pitSec=+$("pitSec").value;
 
-  let laps=Math.floor(fuelCap/fuelLap);
-  let stintSec=laps*lapSec;
-  $("info").textContent=`Relais = ${laps} tours ≈ ${Math.round(stintSec/60)} min`;
+  let lapsPerStint=Math.floor(fuelCap/fuelLap);
+  let stintSec=lapsPerStint*lapSec;
+
+  let info = $("info");
+  if(info) info.textContent=`Relais = ${lapsPerStint} tours ≈ ${Math.round(stintSec/60)} min`;
 
   state.plan=[];
-  let t=start, elapsed=0, idx=0, first=true;
 
-  while(elapsed<raceHours*3600-1){
-    if(!first){t+=pitSec; elapsed+=pitSec;}
+  let t=start;
+  let elapsed=0;
+  let idx=0;
+  let first=true;
+  let totalRaceSec = raceHours * 3600;
+
+  while(elapsed < totalRaceSec){
+
+    if(!first){
+      t+=pitSec;
+      elapsed = Math.min(t - start, totalRaceSec);
+    }
     first=false;
 
     let found=null, tries=0;
-    while(tries<state.drivers.length){
+    while(tries < state.drivers.length){
       let p=state.drivers[idx];
-      if(isAvailable(p,t,t+stintSec)){found=p; break;}
-      idx=(idx+1)%state.drivers.length; tries++;
+      if(isAvailable(p,t,t+stintSec)){ found=p; break; }
+      idx=(idx+1)%state.drivers.length;
+      tries++;
     }
     if(!found) return alert("Aucun pilote disponible à "+fmt(t));
 
-    let rep=$("stintMode").value==="double"?2:1;
-    for(let r=0;r<rep;r++){
-      if(elapsed>=raceHours*3600) break;
-      state.plan.push({start:t,end:t+stintSec,driver:found.name,laps});
-      t+=stintSec; elapsed+=stintSec;
-      if(r<rep-1){t+=pitSec; elapsed+=pitSec;}
-    }
-    idx=(idx+1)%state.drivers.length;
+    let stintStart = t;
+    let stintEnd = clampEndTime(t + stintSec, start, totalRaceSec);
+
+    let realDuration = stintEnd - stintStart;
+    if(realDuration <= 0) break;
+
+    let realLaps = Math.floor(realDuration / lapSec);
+
+    state.plan.push({
+      start: stintStart,
+      end: stintEnd,
+      driver: found.name,
+      laps: realLaps
+    });
+
+    t = stintEnd;
+    elapsed = Math.min(t - start, totalRaceSec);
+
+    idx = (idx + 1) % state.drivers.length;
   }
-// 🔧 Patch: forcer la fin de course à l'heure officielle (sans toucher au reste)
-    let officialEnd = start + raceHours * 3600;
-      if(state.plan.length > 0){
-      state.plan[state.plan.length - 1].end = officialEnd;
-}
+
+  // 🔒 Sécurité ultime : la fin DOIT être exacte
+  if(state.plan.length){
+    state.plan[state.plan.length - 1].end = start + totalRaceSec;
+  }
 
   updateAll();
 }
 
 // ---------- Affichage ----------
 function renderPlan(){
-  let tb=$("planTable"); tb.innerHTML="";
+  let tb=$("planTable"); 
+  if(!tb) return;
+  tb.innerHTML="";
   let rule = computeRuleStatus();
 
   state.plan.forEach((r,i)=>{
@@ -290,10 +308,14 @@ function renderPlan(){
 // ---------- Edition ----------
 function openEdit(i){
   editIndex=i;
-  let sel=$("editSelect"); sel.innerHTML="";
+  let sel=$("editSelect"); 
+  if(!sel) return;
+  sel.innerHTML="";
   state.drivers.forEach(d=>{
     let o=document.createElement("option");
-    o.value=d.name; o.textContent=d.name; sel.appendChild(o);
+    o.value=d.name; 
+    o.textContent=d.name; 
+    sel.appendChild(o);
   });
   sel.value=state.plan[i].driver;
   $("editPopup").style.display="flex";
@@ -311,9 +333,11 @@ function confirmEdit(){
   updateAll();
 }
 
-// ---------- Règle + Bandeau + Popup ----------
+// ---------- Règle ----------
 function checkRules(){
-  let c=$("checks"); c.innerHTML="";
+  let c=$("checks"); 
+  if(!c) return;
+  c.innerHTML="";
   let rule = computeRuleStatus();
 
   c.innerHTML=`<b>Minimum requis: ${rule.min} tours</b><br>`;
@@ -330,26 +354,26 @@ function notifyIfRuleBroken(){
   let rule = computeRuleStatus();
   let bad = state.drivers.filter(d=>rule.count[d.name] < rule.min);
   let banner=$("ruleBanner");
+  if(!banner) return;
 
   if(bad.length){
     let msg="⚠️ Règle iRacing non respectée par : "+bad.map(d=>d.name).join(", ");
     banner.textContent=msg;
     banner.style.display="block";
-    alert("⚠️ Règle iRacing non respectée par :\n\n"+bad.map(d=>"- "+d.name).join("\n"));
   } else {
     banner.style.display="none";
     banner.textContent="";
   }
 }
 
-// ---------- Mise à jour globale ----------
+// ---------- Update ----------
 function updateAll(){
   renderPlan();
   checkRules();
   notifyIfRuleBroken();
 }
 
-// ---------- Sauvegarde / Chargement / Suppression ----------
+// ---------- Sauvegardes ----------
 function savePlan(){
   let name=$("planName").value.trim();
   if(!name) return alert("Donne un nom au planning");
@@ -370,12 +394,17 @@ function savePlan(){
 }
 
 function refreshLoadList(){
-  let sel=$("loadSelect"); sel.innerHTML="";
-  Object.keys(localStorage).filter(k=>k.startsWith("iracing_plan_")).forEach(k=>{
-    let n=k.replace("iracing_plan_","");
-    let o=document.createElement("option");
-    o.value=n; o.textContent=n; sel.appendChild(o);
-  });
+  let sel=$("loadSelect"); 
+  if(!sel) return;
+  sel.innerHTML="";
+  Object.keys(localStorage)
+    .filter(k=>k.startsWith("iracing_plan_"))
+    .forEach(k=>{
+      let n=k.replace("iracing_plan_","");
+      let o=document.createElement("option");
+      o.value=n; o.textContent=n; 
+      sel.appendChild(o);
+    });
 }
 
 function loadSelectedPlan(){
@@ -406,4 +435,3 @@ updateSOF();
 
 </body>
 </html>
-

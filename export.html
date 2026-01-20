@@ -1,55 +1,155 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>iRacing Planner - Export</title>
+<title>Ascendia Racing - Export Planning</title>
 
+<link rel="stylesheet" href="ascendia.css">
+
+<!-- Librairie pour capture PNG -->
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <style>
-body { font-family: Arial, sans-serif; padding:20px; background:#111; color:#eee; }
-select, button { padding:6px; margin:5px; }
+/* =========================
+   EXPORT PNG STYLING
+========================= */
 
-table { border-collapse: collapse; margin-top:20px; background:#000; }
-td, th { border:1px solid #555; padding:6px; }
+#exportArea {
+  background: linear-gradient(180deg, #0b1220, #05080f);
+  padding: 30px;
+  border-radius: 16px;
+  border: 1px solid rgba(0,180,255,0.4);
+  box-shadow: 0 0 40px rgba(0,0,0,0.8);
+}
 
-.topbar { margin-bottom: 15px; }
+.exportHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(0,180,255,0.3);
+}
 
-h1 { margin-top: 0; }
+.exportBrand {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.exportLogo {
+  height: 60px;
+}
+
+.exportTeam {
+  font-size: 26px;
+  font-weight: bold;
+  color: #7fe9ff;
+  text-shadow: 0 0 10px rgba(0,180,255,0.5);
+}
+
+.exportTitle {
+  font-size: 22px;
+  color: #aeefff;
+  text-align: right;
+}
+
+#exportArea table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#exportArea th {
+  background: linear-gradient(180deg, #1b6f8f, #0e3a4d);
+  color: #e6f7ff;
+  padding: 10px;
+}
+
+#exportArea td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+
+#exportArea tr:nth-child(even) {
+  background: rgba(255,255,255,0.04);
+}
 </style>
+
 </head>
 <body>
 
-<div class="topbar">
-  <button onclick="window.location.href='index.html'">🏠 Accueil</button>
+<!-- ================= TOP BAR ================= -->
+<div id="topBar">
+  <div class="teamBrand">
+    <img src="logo.png" alt="Ascendia Racing" class="teamLogo">
+    <span class="teamName">Ascendia Racing</span>
+  </div>
 </div>
 
-<h1>📤 Export du planning</h1>
-
-<div>
-  <select id="loadSelect"></select>
-  <button onclick="loadPlan()">📂 Charger</button>
-  <button onclick="exportImage()" id="exportBtn" disabled>📸 Exporter en image</button>
+<!-- ================= TOP NAV ================= -->
+<div class="topNav">
+  <button onclick="location.href='index.html'">🏠 Accueil</button>
+  <button onclick="location.href='planner.html'">🛠 Planner</button>
+  <button onclick="location.href='live.html'">🟢 Live</button>
 </div>
 
-<h2 id="planTitle"></h2>
+<h1 class="mainTitle">📤 Export du planning</h1>
 
-<div id="captureZone">
-  <table>
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Début</th>
-        <th>Fin</th>
-        <th>Pilote</th>
-        <th>Tours</th>
-      </tr>
-    </thead>
-    <tbody id="planTable"></tbody>
-  </table>
+<!-- ================= LAYOUT ================= -->
+<div class="appContainer">
+
+  <!-- ===== LEFT PANEL ===== -->
+  <div id="leftPanel">
+
+    <div class="block">
+      <h2>Charger un planning</h2>
+      <select id="loadSelect"></select><br><br>
+      <button onclick="loadPlan()">📂 Charger</button>
+    </div>
+
+    <div class="block">
+      <h2>Export</h2>
+      <button id="exportBtn" onclick="exportPNG()" disabled>📸 Exporter en PNG</button>
+    </div>
+
+  </div>
+
+  <!-- ===== RIGHT PANEL ===== -->
+  <div id="rightPanel">
+
+    <h2 class="centerTitle" id="planTitle"></h2>
+
+    <!-- ===== ZONE CAPTURE ===== -->
+    <div id="exportArea">
+
+      <div class="exportHeader">
+        <div class="exportBrand">
+          <img src="logo.png" class="exportLogo">
+          <div class="exportTeam">Ascendia Racing</div>
+        </div>
+        <div class="exportTitle" id="exportTitle">Planning</div>
+      </div>
+
+      <table class="planningTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Début</th>
+            <th>Fin</th>
+            <th>Pilote</th>
+            <th>Tours</th>
+          </tr>
+        </thead>
+        <tbody id="planTable"></tbody>
+      </table>
+
+    </div>
+
+  </div>
+
 </div>
 
+<!-- ================= SCRIPT EXPORT ================= -->
 <script>
 function $(id){ return document.getElementById(id); }
 
@@ -62,20 +162,23 @@ function fmt(sec){
 
 // -------- Charger la liste --------
 function refreshLoadList(){
-  let sel=$("loadSelect"); sel.innerHTML="";
+  let sel=$("loadSelect"); 
+  sel.innerHTML="";
   Object.keys(localStorage)
     .filter(k=>k.startsWith("iracing_plan_"))
     .forEach(k=>{
       let n=k.replace("iracing_plan_","");
       let o=document.createElement("option");
-      o.value=n; o.textContent=n;
+      o.value=n; 
+      o.textContent=n;
       sel.appendChild(o);
     });
 }
 
-// -------- Charger un planning --------
+// -------- Données --------
 let currentPlan = null;
 
+// -------- Charger un planning --------
 function loadPlan(){
   let n = $("loadSelect").value;
   if(!n) return alert("Aucune sauvegarde sélectionnée");
@@ -88,6 +191,7 @@ function loadPlan(){
   currentPlan = data.state.plan;
 
   $("planTitle").textContent = "Planning : " + n;
+  $("exportTitle").textContent = "Planning : " + n;
 
   renderPlan();
   $("exportBtn").disabled = false;
@@ -113,13 +217,13 @@ function renderPlan(){
   });
 }
 
-// -------- Export --------
-function exportImage(){
-  if(!currentPlan) return;
+// -------- Export PNG --------
+function exportPNG(){
+  if(!currentPlan) return alert("Aucun planning chargé");
 
-  let zone = $("captureZone");
+  let zone = $("exportArea");
 
-  html2canvas(zone, { backgroundColor: "#000" }).then(canvas=>{
+  html2canvas(zone, { backgroundColor: "#05080f", scale: 2 }).then(canvas=>{
     let link = document.createElement("a");
     link.download = "planning.png";
     link.href = canvas.toDataURL("image/png");
@@ -127,7 +231,7 @@ function exportImage(){
   });
 }
 
-// init
+// -------- INIT --------
 refreshLoadList();
 </script>
 
