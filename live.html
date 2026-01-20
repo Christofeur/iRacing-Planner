@@ -213,16 +213,19 @@ function confirmIncident(){
   closeIncident();
 }
 
-// -------- Replanification --------
+// -------- Replanification BLINDÉE --------
 function applyReplan(index, newStartTime){
-  if(!workingPlan) return;
+  if(!workingPlan || !loadedData) return;
 
+  // Sauvegarde pour undo
   previousPlan = JSON.parse(JSON.stringify(workingPlan));
   previousReplannedFromIndex = replannedFromIndex;
   $("undoBtn").disabled = false;
 
+  // On garde tout avant l'incident
   let before = workingPlan.slice(0, index);
 
+  // Sécurité : ne pas repartir avant la fin du relais précédent
   if(before.length){
     let last = before[before.length - 1];
     if(newStartTime < last.end){
@@ -230,6 +233,7 @@ function applyReplan(index, newStartTime){
     }
   }
 
+  // Si déjà après la fin de course
   if(newStartTime >= raceEndTime){
     workingPlan = before;
     clampPlanToRaceEnd();
@@ -238,31 +242,31 @@ function applyReplan(index, newStartTime){
     return;
   }
 
-  let basePlan = workingPlan;
+  // === BASE SAINE : PLAN ORIGINAL ===
+  let originalPlan = loadedData.state.plan;
 
-  let refIndex = Math.max(0, index - 1);
-  let ref = basePlan[refIndex];
-
+  // Durée de relais de référence
+  let ref = originalPlan[0];
   let stintDuration = ref.end - ref.start;
   let lapTimeSec = stintDuration / ref.laps;
 
+  // Ordre des pilotes ORIGINAL à partir de l'index
   let driversOrder = [];
-
-  for(let i=index; i < basePlan.length; i++){
-    driversOrder.push(basePlan[i].driver);
+  for(let i=index; i < originalPlan.length; i++){
+    driversOrder.push(originalPlan[i].driver);
   }
 
-  if(driversOrder.length === 0 && basePlan[index]){
-    driversOrder.push(basePlan[index].driver);
+  if(driversOrder.length === 0 && originalPlan[index]){
+    driversOrder.push(originalPlan[index].driver);
   }
 
+  // === RECONSTRUCTION COMPLÈTE JUSQU'À FIN ===
   let newPart = [];
   let t = newStartTime;
+  let i = 0;
 
-  for(let i=0;i<driversOrder.length;i++){
-    if(t >= raceEndTime) break;
-
-    let driver = driversOrder[i];
+  while(t < raceEndTime){
+    let driver = driversOrder[i % driversOrder.length];
 
     let start = t;
     let end = Math.min(start + stintDuration, raceEndTime);
@@ -282,10 +286,13 @@ function applyReplan(index, newStartTime){
     if(end >= raceEndTime) break;
 
     t = end;
+    i++;
   }
 
+  // Nouveau planning
   workingPlan = before.concat(newPart);
 
+  // Sécurité absolue
   clampPlanToRaceEnd();
 
   replannedFromIndex = index;
@@ -311,7 +318,8 @@ function undoReplan(){
 
 // -------- INIT --------
 refreshLoadList();
-  </script>
+</script>
+
 
 </body>
 </html>
