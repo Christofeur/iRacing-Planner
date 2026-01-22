@@ -94,7 +94,10 @@
 function $(id){ return document.getElementById(id); }
 
 // -------- Temps --------
-function parseHM(t){ let [h,m]=t.split(":").map(Number); return h*3600+m*60; }
+function parseHM(t){
+  let [h,m]=t.split(":").map(Number);
+  return h*3600+m*60;
+}
 function fmt(sec){
   sec=((sec%86400)+86400)%86400;
   let h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60);
@@ -102,70 +105,94 @@ function fmt(sec){
 }
 
 // -------- Données --------
-let loadedData=null, workingPlan=null, previousPlan=null;
-let incidentIndex=null;
-let replannedFromIndex=null, previousReplannedFromIndex=null;
-let raceEndTime=null;
+let loadedData = null;
+let workingPlan = null;
+let previousPlan = null;
+let incidentIndex = null;
 
-// -------- Clamp --------
+let replannedFromIndex = null;
+let previousReplannedFromIndex = null;
+
+let raceEndTime = null;
+
+// -------- Nettoyage strict --------
 function clampPlanToRaceEnd(){
   if(!workingPlan) return;
-  let newPlan=[];
+
+  let newPlan = [];
+
   for(let r of workingPlan){
-    if(r.start>=raceEndTime) break;
-    let end=Math.min(r.end,raceEndTime);
-    if(end<=r.start) break;
-    newPlan.push({...r,end:end});
-    if(end>=raceEndTime) break;
+    if(r.start >= raceEndTime) break;
+
+    let end = Math.min(r.end, raceEndTime);
+    if(end <= r.start) break;
+
+    newPlan.push({ ...r, end: end });
+
+    if(end >= raceEndTime) break;
   }
-  workingPlan=newPlan;
+
+  workingPlan = newPlan;
 }
 
-// -------- Load list --------
+// -------- Sauvegardes --------
 function refreshLoadList(){
-  let sel=$("loadSelect"); sel.innerHTML="";
-  Object.keys(localStorage).filter(k=>k.startsWith("iracing_plan_")).forEach(k=>{
-    let n=k.replace("iracing_plan_","");
-    let o=document.createElement("option");
-    o.value=n; o.textContent=n;
-    sel.appendChild(o);
-  });
+  let sel=$("loadSelect"); 
+  sel.innerHTML="";
+  Object.keys(localStorage)
+    .filter(k=>k.startsWith("iracing_plan_"))
+    .forEach(k=>{
+      let n=k.replace("iracing_plan_","");
+      let o=document.createElement("option");
+      o.value=n; 
+      o.textContent=n;
+      sel.appendChild(o);
+    });
 }
 
-// -------- Load plan --------
+// -------- Charger planning --------
 function loadPlan(){
-  let n=$("loadSelect").value;
-  if(!n) return alert("Aucune sauvegarde");
+  let n = $("loadSelect").value;
+  if(!n) return alert("Aucune sauvegarde sélectionnée");
 
-  loadedData=JSON.parse(localStorage.getItem("iracing_plan_"+n));
-  workingPlan=JSON.parse(JSON.stringify(loadedData.state.plan));
+  loadedData = JSON.parse(localStorage.getItem("iracing_plan_"+n));
+  workingPlan = JSON.parse(JSON.stringify(loadedData.state.plan));
 
-  let start=parseHM(loadedData.form.startTime);
-  raceEndTime=start+(+loadedData.form.raceHours)*3600;
+  let start = parseHM(loadedData.form.startTime);
+  let raceHours = +loadedData.form.raceHours;
+  raceEndTime = start + raceHours * 3600;
 
-  previousPlan=null; replannedFromIndex=null;
-  $("undoBtn").disabled=true;
+  previousPlan = null;
+  replannedFromIndex = null;
+  previousReplannedFromIndex = null;
 
-  $("planTitle").textContent="Planning : "+n+" (fin: "+fmt(raceEndTime)+")";
+  $("undoBtn").disabled = true;
+
+  $("planTitle").textContent = 
+    "Planning : " + n + " (fin course: " + fmt(raceEndTime) + ")";
 
   clampPlanToRaceEnd();
   renderPlan();
 }
 
-// -------- Render --------
+// -------- Affichage --------
 function renderPlan(){
-  let tb=$("planTable"); tb.innerHTML="";
+  let tb = $("planTable");
+  tb.innerHTML = "";
+
   if(!workingPlan) return;
 
   workingPlan.forEach((r,i)=>{
-    let tr=document.createElement("tr");
-    let repl=(replannedFromIndex!==null && i>=replannedFromIndex);
-    if(repl) tr.classList.add("replanned");
-    tr.innerHTML=`
+    let tr = document.createElement("tr");
+
+    let isReplanned = (replannedFromIndex !== null && i >= replannedFromIndex);
+    if(isReplanned) tr.classList.add("replanned");
+
+    tr.innerHTML = `
       <td>${i+1}</td>
       <td>${fmt(r.start)}</td>
       <td>${fmt(r.end)}</td>
-      <td>${r.driver} ${repl?'🔁':''}</td>
+      <td>${r.driver}</td>
       <td>${r.laps}</td>
       <td><button onclick="openIncident(${i})">🚨 Incident</button></td>
     `;
@@ -173,14 +200,18 @@ function renderPlan(){
   });
 }
 
-// -------- Incident --------
+// -------- Incident UI --------
 function openIncident(i){
-  incidentIndex=i;
-  $("incidentTime").value="";
-  let sel=$("incidentDriver"); sel.innerHTML="";
+  incidentIndex = i;
+  $("incidentTime").value = "";
 
-  let drivers=[];
-  loadedData.state.plan.forEach(r=>{ if(!drivers.includes(r.driver)) drivers.push(r.driver); });
+  let sel = $("incidentDriver");
+  sel.innerHTML = "";
+
+  let drivers = [];
+  loadedData.state.plan.forEach(r=>{
+    if(!drivers.includes(r.driver)) drivers.push(r.driver);
+  });
 
   drivers.forEach(d=>{
     let o=document.createElement("option");
@@ -188,64 +219,112 @@ function openIncident(i){
     sel.appendChild(o);
   });
 
-  sel.value=workingPlan[i].driver;
-  $("incidentPopup").style.display="flex";
+  sel.value = workingPlan[i].driver;
+
+  $("incidentPopup").style.display = "flex";
 }
-function closeIncident(){ $("incidentPopup").style.display="none"; }
+
+function closeIncident(){
+  $("incidentPopup").style.display = "none";
+  incidentIndex = null;
+}
+
 function confirmIncident(){
-  let t=$("incidentTime").value;
-  if(!t) return alert("Heure manquante");
-  applyReplan(incidentIndex, parseHM(t), $("incidentDriver").value);
+  let t = $("incidentTime").value;
+  if(!t) return alert("Entre une heure");
+
+  let newStart = parseHM(t);
+  let driver = $("incidentDriver").value;
+
+  applyReplan(incidentIndex, newStart, driver);
   closeIncident();
 }
 
-// -------- Replan --------
-function applyReplan(index,newStartTime,forcedDriver){
-  previousPlan=JSON.parse(JSON.stringify(workingPlan));
-  $("undoBtn").disabled=false;
+// -------- REPLANIFICATION PROPRE --------
+function applyReplan(index, newStartTime, startDriver){
+  if(!workingPlan || !loadedData) return;
 
-  let before=workingPlan.slice(0,index);
-  if(before.length && newStartTime<before.at(-1).end) newStartTime=before.at(-1).end;
+  previousPlan = JSON.parse(JSON.stringify(workingPlan));
+  previousReplannedFromIndex = replannedFromIndex;
+  $("undoBtn").disabled = false;
 
-  let originalPlan=loadedData.state.plan;
-  let ref=originalPlan[0];
-  let stintDuration=ref.end-ref.start;
-  let lapTimeSec=stintDuration/ref.laps;
+  // Tout avant l'incident
+  let before = workingPlan.slice(0, index);
 
-  let drivers=[];
-  originalPlan.forEach(r=>{ if(!drivers.includes(r.driver)) drivers.push(r.driver); });
-
-  let startDriver=forcedDriver;
-  let startIdx=drivers.indexOf(startDriver); if(startIdx<0) startIdx=0;
-
-  let newPart=[], t=newStartTime, i=0;
-  while(t<raceEndTime){
-    let driver=drivers[(startIdx+i)%drivers.length];
-    let end=Math.min(t+stintDuration,raceEndTime);
-    let laps=Math.floor((end-t)/lapTimeSec);
-    newPart.push({start:t,end:end,driver:driver,laps:laps});
-    if(end>=raceEndTime) break;
-    t=end; i++;
+  if(newStartTime >= raceEndTime){
+    workingPlan = before;
+    clampPlanToRaceEnd();
+    replannedFromIndex = index;
+    renderPlan();
+    return;
   }
 
-  workingPlan=before.concat(newPart);
+  // Référence durée relais
+  let ref = loadedData.state.plan[0];
+  let stintDuration = ref.end - ref.start;
+  let lapTimeSec = stintDuration / ref.laps;
+
+  // Liste unique pilotes
+  let drivers = [];
+  loadedData.state.plan.forEach(r=>{
+    if(!drivers.includes(r.driver)) drivers.push(r.driver);
+  });
+
+  let startIdx = drivers.indexOf(startDriver);
+  if(startIdx < 0) startIdx = 0;
+
+  let newPart = [];
+  let t = newStartTime;
+  let i = 0;
+
+  while(t < raceEndTime){
+    let driver = drivers[(startIdx + i) % drivers.length];
+
+    let start = t;
+    let end = Math.min(start + stintDuration, raceEndTime);
+
+    let realDuration = end - start;
+    if(realDuration <= 0) break;
+
+    let realLaps = Math.floor(realDuration / lapTimeSec);
+
+    newPart.push({
+      start: start,
+      end: end,
+      driver: driver,
+      laps: realLaps
+    });
+
+    if(end >= raceEndTime) break;
+
+    t = end;
+    i++;
+  }
+
+  workingPlan = before.concat(newPart);
   clampPlanToRaceEnd();
-  replannedFromIndex=index;
+
+  replannedFromIndex = index;
   renderPlan();
 }
 
 // -------- Undo --------
 function undoReplan(){
   if(!previousPlan) return;
-  workingPlan=JSON.parse(JSON.stringify(previousPlan));
-  previousPlan=null;
-  replannedFromIndex=null;
-  $("undoBtn").disabled=true;
+
+  workingPlan = JSON.parse(JSON.stringify(previousPlan));
+  replannedFromIndex = previousReplannedFromIndex;
+
+  previousPlan = null;
+  previousReplannedFromIndex = null;
+
+  $("undoBtn").disabled = true;
+
   clampPlanToRaceEnd();
   renderPlan();
 }
 
-// -------- INIT --------
+// -------- Init --------
 refreshLoadList();
 </script>
 
