@@ -7,8 +7,7 @@
 <link rel="stylesheet" href="ascendia.css">
 
 <!-- html2canvas (local ou CDN selon ton setup) -->
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-
+<script src="html2canvas.min.js"></script>
 
 <style>
 /* =========================
@@ -311,15 +310,27 @@ function renderRecap(){
 
 // -------- Export PNG --------
 function exportPNG(){
+  if(!currentPlan) return alert("Aucun planning chargé");
+
   let zone = $("exportArea");
 
   html2canvas(zone, { backgroundColor: "#05080f", scale: 2 }).then(canvas=>{
+
     let link = document.createElement("a");
-    link.download = "planning.png";
+
+    let filename = currentData && currentData.state && currentData.state.name 
+      ? currentData.state.name 
+      : "planning";
+
+    // Nettoyage du nom de fichier
+    filename = filename.replace(/[^\w\d-_ ]+/g, "").replace(/\s+/g, "_");
+
+    link.download = filename + ".png";
     link.href = canvas.toDataURL("image/png");
     link.click();
   });
 }
+
 
 // -------- INIT --------
 refreshLoadList();
