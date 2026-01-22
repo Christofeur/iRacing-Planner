@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Ascendia Racing - Pitwall</title>
+<link rel="stylesheet" href="ascendia.css">
+<style>
+.pitwallMain {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.bigBox {
+  font-size: 32px;
+  text-align: center;
+  padding: 20px;
+}
+.bigValue {
+  font-size: 56px;
+  font-weight: bold;
+  margin-top: 10px;
+  color: #7fe9ff;
+}
+.timer {
+  font-size: 48px;
+  font-weight: bold;
+}
+.controls button {
+  font-size: 18px;
+  padding: 10px 16px;
+  margin: 5px;
+}
+</style>
+</head>
+<body>
+
+<!-- ================= TOP BAR ================= -->
+<div id="topBar">
+  <div class="teamBrand">
+    <img src="logo.png" alt="Ascendia Racing" class="teamLogo">
+    <span class="teamName">Ascendia Racing</span>
+  </div>
+</div>
+
+<!-- ================= TOP NAV ================= -->
+<div class="topNav">
+  <button onclick="location.href='index.html'">🏠 Accueil</button>
+  <button onclick="location.href='planner.html'">🛠 Planner</button>
+  <button onclick="location.href='live.html'">🟢 Live</button>
+</div>
+
+<h1 class="mainTitle">🖥️ PIT WALL (Mode Simulation)</h1>
+
+<div class="appContainer">
+
+  <!-- ===== LEFT PANEL ===== -->
+  <div id="leftPanel">
+
+    <div class="block">
+      <h2>Charger un planning</h2>
+      <select id="loadSelect"></select><br><br>
+      <button onclick="loadPlan()">📂 Charger</button>
+    </div>
+
+    <div class="block">
+      <h2>Simulation temps</h2>
+      <div class="controls">
+        <button onclick="togglePlay()">▶️ / ⏸️</button><br>
+        <button onclick="addTime(-300)">⏪ -5 min</button>
+        <button onclick="addTime(300)">⏩ +5 min</button><br>
+        <button onclick="speed = 1">x1</button>
+        <button onclick="speed = 5">x5</button>
+        <button onclick="speed = 20">x20</button>
+      </div>
+      <div style="margin-top:10px">
+        Temps simulé : <b id="simTimeLabel"></b>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== RIGHT PANEL ===== -->
+  <div id="rightPanel">
+
+    <div class="pitwallMain">
+
+      <div class="block bigBox">
+        Pilote en piste
+        <div class="bigValue" id="currentDriver">-</div>
+      </div>
+
+      <div class="block bigBox">
+        Prochain pilote
+        <div class="bigValue" id="nextDriver">-</div>
+      </div>
+
+      <div class="block bigBox">
+        Temps restant relais
+        <div class="timer" id="stintRemaining">--:--</div>
+      </div>
+
+      <div class="block bigBox">
+        Temps restant course
+        <div class="timer" id="raceRemaining">--:--</div>
+      </div>
+
+      <div class="block bigBox">
+        Prochain pit à
+        <div class="bigValue" id="nextPit">--:--</div>
+      </div>
+
+      <div class="block bigBox">
+        Heure fin course
+        <div class="bigValue" id="raceEndLabel">--:--</div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+function $(id){ return document.getElementById(id); }
+
+// -------- Temps --------
+function parseHM(t){
+  let [h,m]=t.split(":").map(Number);
+  return h*3600+m*60;
+}
+function fmt(sec){
+  sec=((sec%86400)+86400)%86400;
+  let h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60);
+  return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");
+}
+function fmtDur(sec){
+  if(sec < 0) sec = 0;
+  let h=Math.floor(sec/3600);
+  let m=Math.floor((sec%3600)/60);
+  let s=Math.floor(sec%60);
+  if(h>0) return h+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  return m+":"+String(s).padStart(2,"0");
+}
+
+// -------- Données --------
+let loadedData = null;
+let plan = null;
+let raceEndTime = null;
+
+// Simulation time
+let simTime = null;
+let playing = false;
+let speed = 1; // x1, x5, x20
+let lastTick = Date.now();
+
+// -------- Load list --------
+function refreshLoadList(){
+  let sel=$("loadSelect"); 
+  sel.innerHTML="";
+  Object.keys(localStorage)
+    .filter(k=>k.startsWith("iracing_plan_"))
+    .forEach(k=>{
+      let n=k.replace("iracing_plan_","");
+      let o=document.createElement("option");
+      o.value=n; 
+      o.textContent=n;
+      sel.appendChild(o);
+    });
+}
+
+// -------- Load plan --------
+function loadPlan(){
+  let n = $("loadSelect").value;
+  if(!n) return alert("Aucune sauvegarde");
+
+  loadedData = JSON.parse(localStorage.getItem("iracing_plan_"+n));
+  plan = loadedData.state.plan;
+
+  let start = parseHM(loadedData.form.startTime);
+  let raceHours = +loadedData.form.raceHours;
+  raceEndTime = start + raceHours * 3600;
+
+  // Init simulation time = start of race
+  simTime = start;
+
+  $("raceEndLabel").textContent = fmt(raceEndTime);
+
+  updateDisplay();
+}
+
+// -------- Controls --------
+function togglePlay(){
+  playing = !playing;
+  lastTick = Date.now();
+}
+
+function addTime(sec){
+  if(simTime == null) return;
+  simTime += sec;
+  updateDisplay();
+}
+
+// -------- Main loop --------
+function tick(){
+  if(playing && simTime != null){
+    let now = Date.now();
+    let dt = (now - lastTick) / 1000;
+    lastTick = now;
+    simTime += dt * speed;
+    updateDisplay();
+  }
+  requestAnimationFrame(tick);
+}
+
+// -------- Update display --------
+function updateDisplay(){
+  if(!plan || simTime == null) return;
+
+  $("simTimeLabel").textContent = fmt(simTime);
+
+  // Find current stint
+  let current = null;
+  let next = null;
+
+  for(let i=0;i<plan.length;i++){
+    let r = plan[i];
+    if(simTime >= r.start && simTime < r.end){
+      current = r;
+      next = plan[i+1] || null;
+      break;
+    }
+  }
+
+  if(!current){
+    $("currentDriver").textContent = "—";
+    $("nextDriver").textContent = "—";
+    $("stintRemaining").textContent = "--:--";
+    $("raceRemaining").textContent = "--:--";
+    $("nextPit").textContent = "--:--";
+    return;
+  }
+
+  $("currentDriver").textContent = current.driver;
+  $("nextDriver").textContent = next ? next.driver : "—";
+
+  let stintRem = current.end - simTime;
+  let raceRem = raceEndTime - simTime;
+
+  $("stintRemaining").textContent = fmtDur(stintRem);
+  $("raceRemaining").textContent = fmtDur(raceRem);
+  $("nextPit").textContent = fmt(current.end);
+}
+
+// -------- Init --------
+refreshLoadList();
+requestAnimationFrame(tick);
+</script>
+
+</body>
+</html>
