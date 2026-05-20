@@ -331,7 +331,8 @@
         function obtenirNomFichierPropre() {
             const saisie = document.getElementById('nomCourse').value.trim();
             if (saisie === "") return "Course";
-            return saisie.replace(/[^a-aZ-Z0-9]/g, "_"); // Remplace les espaces/accents par des underscores
+            // Nettoyage correct (Garde les lettres minuscules, majuscules et chiffres, remplace le reste par _)
+            return saisie.replace(/[^a-zA-Z0-9]/g, "_"); 
         }
 
         function exporterFichierStrategie() {
