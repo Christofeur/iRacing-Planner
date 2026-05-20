@@ -1,160 +1,694 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Ascendia Racing — iRacing Tools</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ascendia Racing - Strategy Lab V7.2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=Segoe+UI&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --ascendia-blue: #00befa; 
+            --ascendia-silver: #d1d1d1; 
+            --bg-dark: #101010;
+            --bg-card: #202020;
+            --bg-input: #2a2a2a;
+            --text-main: #f5f5f5;
+            --danger-red: #cc0000;
+            --success-green: #00cc66;
+        }
 
-  <!-- Police -->
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&display=swap" rel="stylesheet">
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
 
-  <style>
-    * { box-sizing: border-box; }
+        .header-container {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--ascendia-silver);
+        }
 
-    body {
-      margin: 0;
-      font-family: "Orbitron", sans-serif;
-      background: radial-gradient(circle at top, #0b1220, #05080f 70%);
-      color: #fff;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+        .header-logo { width: 100px; height: auto; }
 
-    .container {
-      text-align: center;
-      width: 100%;
-      max-width: 900px;
-      padding: 40px 20px;
-    }
+        h1, h2, h3 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--ascendia-blue);
+            text-transform: uppercase;
+        }
 
-    .logo {
-      max-width: 320px;
-      margin-bottom: 30px;
-      filter: drop-shadow(0 0 25px rgba(0,200,255,0.4));
-    }
+        h1 { font-size: 2.5em; margin: 0; }
 
-    h1 {
-      margin: 10px 0 40px 0;
-      font-weight: 800;
-      letter-spacing: 2px;
-      font-size: 32px;
-    }
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 25px;
+        }
 
-    .buttons {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 25px;
-    }
+        @media (max-width: 900px) {
+            .grid-layout { grid-template-columns: 1fr; }
+        }
 
-    @media (min-width: 700px) {
-      .buttons {
-        grid-template-columns: repeat(3, 1fr);
-      }
-    }
+        .section {
+            background-color: var(--bg-card);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border-left: 5px solid var(--ascendia-blue);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        }
 
-    .card {
-      background: linear-gradient(180deg, #0f1a2e, #0a1020);
-      border-radius: 16px;
-      padding: 30px 20px;
-      text-decoration: none;
-      color: white;
-      border: 1px solid rgba(0,150,255,0.2);
-      box-shadow: 0 0 25px rgba(0,0,0,0.6);
-      transition: all 0.25s ease;
-      position: relative;
-      overflow: hidden;
-    }
+        .section-incident {
+            border-left: 5px solid var(--danger-red);
+            background-color: #251515;
+        }
 
-    .card:hover {
-      transform: translateY(-6px) scale(1.02);
-      box-shadow: 0 0 40px rgba(0,150,255,0.35);
-      border-color: rgba(0,200,255,0.6);
-    }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: var(--ascendia-silver); }
 
-    .card::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at top, rgba(0,200,255,0.15), transparent 60%);
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
+        input, select {
+            padding: 10px;
+            background-color: var(--bg-input);
+            border: 1px solid #444;
+            color: white;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
 
-    .card:hover::after {
-      opacity: 1;
-    }
+        input:focus, select:focus {
+            border-color: var(--ascendia-blue);
+            outline: none;
+        }
 
-    .icon {
-      font-size: 42px;
-      margin-bottom: 15px;
-    }
+        .input-full { width: 100%; }
+        
+        .pilote-card {
+            background: #252525; padding: 15px; border-radius: 6px;
+            margin-bottom: 15px; border-top: 2px solid #444; position: relative;
+        }
 
-    .title {
-      font-size: 20px;
-      margin-bottom: 10px;
-      font-weight: 700;
-    }
+        .pilote-header { display: flex; gap: 10px; margin-bottom: 10px; }
+        .indispo-title { font-size: 12px; font-weight: bold; color: #aaa; margin-top: 8px; margin-bottom: 5px; }
+        .indispo-row { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; }
+        .indispo-row input { padding: 4px; font-size: 12px; }
+        
+        .btn-action {
+            background-color: #333; color: white; border: none;
+            padding: 10px 15px; border-radius: 4px; cursor: pointer;
+            font-weight: bold; font-size: 13px; text-transform: uppercase;
+        }
+        .btn-action:hover { background-color: #444; }
 
-    .desc {
-      font-size: 14px;
-      opacity: 0.8;
-      line-height: 1.4;
-    }
+        .btn-add-pilote {
+            background-color: transparent; border: 2px dashed var(--ascendia-blue);
+            width: 100%; padding: 15px; color: var(--ascendia-blue);
+            font-family: 'Orbitron', sans-serif; font-size: 16px;
+        }
+        .btn-add-pilote:hover { background-color: rgba(0, 190, 250, 0.1); }
 
-    footer {
-      margin-top: 50px;
-      font-size: 12px;
-      opacity: 0.4;
-    }
-  </style>
+        .btn-remove { background-color: var(--danger-red); color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; }
+        .btn-remove-card { position: absolute; top: 15px; right: 15px; background: var(--danger-red); border: none; color: white; border-radius: 4px; cursor: pointer; padding: 4px 8px; }
+
+        button.btn-principal {
+            background: linear-gradient(135deg, #00befa 0%, #0084fa 100%);
+            color: black; border: none; font-family: 'Orbitron', sans-serif;
+            padding: 20px; font-size: 20px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%;
+            text-transform: uppercase; box-shadow: 0 5px 15px rgba(0, 190, 250, 0.4); margin-bottom: 30px;
+        }
+        button.btn-principal:hover { box-shadow: 0 8px 20px rgba(0, 190, 250, 0.6); }
+
+        button.btn-incident {
+            background: linear-gradient(135deg, #cc0000 0%, #880000 100%);
+            color: white; font-family: 'Orbitron', sans-serif; padding: 12px; font-size: 14px;
+        }
+        button.btn-incident:hover { box-shadow: 0 4px 12px rgba(204, 0, 0, 0.5); }
+
+        button.btn-export {
+            background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
+            color: var(--ascendia-blue); border: 2px solid var(--ascendia-blue);
+            font-family: 'Orbitron', sans-serif; padding: 12px 20px; font-size: 14px;
+            font-weight: bold; border-radius: 6px; cursor: pointer; margin-bottom: 20px;
+            text-transform: uppercase; transition: all 0.3s;
+        }
+        button.btn-export:hover {
+            background: var(--ascendia-blue); color: black;
+            box-shadow: 0 4px 10px rgba(0, 190, 250, 0.4);
+        }
+
+        .btn-io {
+            width: 100%; padding: 10px; margin-bottom: 10px; font-weight: bold;
+            text-transform: uppercase; border-radius: 4px; cursor: pointer; font-size: 12px;
+        }
+        .btn-io-export { background-color: #2a2a2a; color: var(--success-green); border: 1px solid var(--success-green); }
+        .btn-io-export:hover { background-color: var(--success-green); color: black; }
+        .btn-io-import { background-color: #2a2a2a; color: var(--ascendia-blue); border: 1px solid var(--ascendia-blue); }
+        .btn-io-import:hover { background-color: var(--ascendia-blue); color: black; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background-color: #1a1a1a; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
+        th { background-color: var(--ascendia-blue); color: black; font-family: 'Orbitron', sans-serif; font-size: 0.9em; }
+        tr:hover { background-color: #2a2a2a; }
+        tr.row-crash { background-color: #421111 !important; border-left: 4px solid var(--danger-red); }
+
+        .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-top: 20px; margin-bottom: 25px;}
+        .card-stat { background-color: var(--bg-card); padding: 20px; border-radius: 8px; border-top: 4px solid var(--ascendia-blue); text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
+        .card-stat div:first-child { color: var(--ascendia-silver); text-transform: uppercase; font-size: 12px; font-weight: bold; }
+        .card-stat .valeur { font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: bold; color: var(--ascendia-blue); margin-top: 8px; }
+        
+        .capture-zone { background-color: var(--bg-dark); padding: 10px; border-radius: 8px; }
+    </style>
 </head>
 <body>
 
-  <div class="container">
-
-    <!-- Logo -->
-    <img src="logo.png" alt="Ascendia Racing" class="logo">
-
-    <h1>Ascendia Racing — iRacing Tools</h1>
-
-    <div class="buttons">
-
-      <a href="planner.html" class="card">
-        <div class="icon">🛠️</div>
-        <div class="title">Planning</div>
-        <div class="desc">
-          Créer et gérer le planning d’endurance<br>
-          Relais, pilotes, carburant, règles iRacing
+    <div class="header-container">
+        <img src="ascendia_logo.png" alt="Ascendia Racing Pegasus Logo" class="header-logo">
+        <div>
+            <h1>Planning Endurance</h1>
+            <p style="margin: 5px 0 0; color: var(--ascendia-silver);">iRacing Endurance Planner by Chris Salingros</p>
         </div>
-      </a>
-
-      <a href="live.html" class="card">
-        <div class="icon">🟢</div>
-        <div class="title">Live Manager</div>
-        <div class="desc">
-          Gérer la course en live<br>
-          Incidents, recalculs, suivi réel
-        </div>
-      </a>
-
-      <a href="export.html" class="card">
-        <div class="icon">📤</div>
-        <div class="title">Export</div>
-        <div class="desc">
-          Exporter le planning<br>
-          Image PNG propre pour l’équipe
-        </div>
-      </a>
-
     </div>
 
-    <footer>
-      Ascendia Racing © iRacing Endurance Tools
-    </footer>
+    <div class="grid-layout">
+        <div>
+            <div class="section">
+                <h2>1. La Course</h2>
+                <div class="form-group">
+                    <label for="nomCourse">Nom de l'épreuve :</label>
+                    <input type="text" id="nomCourse" class="input-full" placeholder="ex: 24h de Spa, IMSA Watkins..." style="border-color: var(--ascendia-blue);">
+                </div>
+                <div class="form-group">
+                    <label for="courseDuree">Durée (en minutes) :</label>
+                    <input type="number" id="courseDuree" class="input-full" value="360">
+                </div>
+                <div class="form-group">
+                    <label for="heureDepart">Départ (HH:MM) :</label>
+                    <input type="time" id="heureDepart" class="input-full" value="14:00">
+                </div>
+                <div class="form-group">
+                    <label for="tempsTour">Chrono au tour (MM.SS.mmm) :</label>
+                    <input type="text" id="tempsTour" class="input-full" value="4.01.235">
+                </div>
+            </div>
 
-  </div>
+            <div class="section">
+                <h2>2. Essence & Stands</h2>
+                <div class="form-group">
+                    <label for="capaciteReservoir">Réservoir (Litres) :</label>
+                    <input type="number" id="capaciteReservoir" class="input-full" value="100">
+                </div>
+                <div class="form-group">
+                    <label for="consoTour">Conso / Tour (Litres) :</label>
+                    <input type="number" id="consoTour" class="input-full" value="3.45" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="tempsPit">Temps d'un Pit (sec) :</label>
+                    <input type="number" id="tempsPit" class="input-full" value="45">
+                </div>
+                
+                <hr style="border: 0; border-top: 1px dashed #444; margin: 15px 0;">
+                
+                <button class="btn-io btn-io-export" onclick="exporterFichierStrategie()">💾 Exporter la configuration</button>
+                <button class="btn-io btn-io-import" onclick="document.getElementById('inputFichierCache').click()">📂 Charger une configuration</button>
+                <input type="file" id="inputFichierCache" style="display:none;" accept=".json" onchange="importerFichierStrategie(this)">
+            </div>
+        </div>
 
+        <div class="section">
+            <h2>3. Gestion Équipage & Contraintes</h2>
+            <div id="listePilotes"></div>
+            <button class="btn-action btn-add-pilote" onclick="ajouterCartePilote('', '', 'simple')">➕ Ajouter un pilote</button>
+        </div>
+    </div>
+
+    <button class="btn-principal" onclick="genererPlanningStrategique(true)">Générer le planning Ascendia 🚀</button>
+
+    <div class="section section-incident" id="incidentSection" style="display:none;">
+        <h2>🚨 GESTION DES INCIDENTS LIVE</h2>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+            <div class="form-group" style="margin:0;">
+                <label for="incRelaisNum">Relais du crash :</label>
+                <select id="incRelaisNum" style="width: 180px;"></select>
+            </div>
+            <div class="form-group" style="margin:0;">
+                <label for="incAction">Après réparations :</label>
+                <select id="incAction" style="width: 240px;">
+                    <option value="continue">Le même pilote continue</option>
+                    <option value="next">Le pilote suivant prend le relais</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin:0;">
+                <label for="incHeureSortie">Heure réelle de sortie (HH:MM) :</label>
+                <input type="time" id="incHeureSortie" style="width: 140px;">
+            </div>
+            <button class="btn-action btn-incident" onclick="enregistrerIncident()">Appliquer l'incident 🛠️</button>
+        </div>
+    </div>
+
+    <div class="section" id="resultatsSection" style="display:none; border-left: 5px solid var(--ascendia-silver);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <h2 id="titreResultat">📊 Tableau de Bord Stratégique</h2>
+            <button class="btn-export" onclick="exporterEnPNG()">📥 Exporter le planning en PNG</button>
+        </div>
+
+        <div id="zoneCapture" class="capture-zone">
+            <div id="captureTitreCourse" style="font-family:'Orbitron', sans-serif; color:var(--ascendia-blue); font-size:18px; margin-bottom:15px; font-weight:bold; display:none;"></div>
+            
+            <div class="result-grid" id="statsMetriques"></div>
+
+            <h3>📅 Planning Chronologique des Relais</h3>
+            <table id="tableauPlanning">
+                <thead>
+                    <tr>
+                        <th>Relais</th>
+                        <th>Pilote</th>
+                        <th>Départ</th>
+                        <th>Fin</th>
+                        <th>Durée</th>
+                        <th>Tours</th>
+                        <th>Action / Statut</th>
+                    </tr>
+                </thead>
+                <tbody id="corpsPlanning"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let piloteIdCounter = 0;
+        let incidentsEnregistres = {}; 
+
+        window.onload = function() {
+            ajouterCartePilote("", "", "simple");
+        };
+
+        function ajouterCartePilote(nom = "", ir = "", relaisType = "simple") {
+            piloteIdCounter++;
+            const currentId = piloteIdCounter;
+            const conteneur = document.getElementById('listePilotes');
+            
+            const div = document.createElement('div');
+            div.className = 'pilote-card';
+            div.id = `pilote-card-${currentId}`;
+            div.innerHTML = `
+                <button class="btn-remove-card" onclick="document.getElementById('pilote-card-${currentId}').remove();">❌ Virer</button>
+                <div class="pilote-header">
+                    <input type="text" class="p-nom" value="${nom}" placeholder="Nom du pilote" style="width:140px;">
+                    <input type="number" class="p-ir" value="${ir}" placeholder="iRating" style="width:80px;">
+                    <select class="p-relais" style="width:110px;">
+                        <option value="simple" ${relaisType === 'simple' ? 'selected' : ''}>Simple</option>
+                        <option value="double" ${relaisType === 'double' ? 'selected' : ''}>Double</option>
+                    </select>
+                </div>
+                <div class="indispo-title">Plages d'indisponibilité (Dodo / Miam / Calin Madame) :</div>
+                <div id="indispo-zone-${currentId}"></div>
+                <button class="btn-action" style="padding:4px 8px; font-size:11px; margin-top:5px;" onclick="ajouterIndispoLigne(${currentId}, '', '')">➕ Indisponibilité</button>
+            `;
+            conteneur.appendChild(div);
+            return currentId;
+        }
+
+        function ajouterIndispoLigne(piloteId, de = "", a = "") {
+            const zone = document.getElementById(`indispo-zone-${piloteId}`);
+            const div = document.createElement('div');
+            div.className = 'indispo-row';
+            div.innerHTML = `
+                <span>De</span> <input type="time" class="indispo-de" value="${de}">
+                <span>à</span> <input type="time" class="indispo-a" value="${a}">
+                <button class="btn-remove" style="padding:2px 6px; font-size:11px;" onclick="this.parentElement.remove()">❌</button>
+            `;
+            zone.appendChild(div);
+        }
+
+        // Nettoyage de chaîne pour éviter les caractères foireux dans les noms de fichiers
+        function obtenirNomFichierPropre() {
+            const saisie = document.getElementById('nomCourse').value.trim();
+            if (saisie === "") return "Course";
+            return saisie.replace(/[^a-aZ-Z0-9]/g, "_"); // Remplace les espaces/accents par des underscores
+        }
+
+        function exporterFichierStrategie() {
+            let structurePilotes = [];
+            const cartes = document.querySelectorAll('.pilote-card');
+            
+            cartes.forEach(carte => {
+                const nom = carte.querySelector('.p-nom').value.trim();
+                const ir = carte.querySelector('.p-ir').value;
+                const typeRelais = carte.querySelector('.p-relais').value;
+                
+                let indispos = [];
+                const deInputs = carte.querySelectorAll('.indispo-de');
+                const aInputs = carte.querySelectorAll('.indispo-a');
+                for (let i = 0; i < deInputs.length; i++) {
+                    if (deInputs[i].value && aInputs[i].value) {
+                        indispos.push({ de: deInputs[i].value, a: aInputs[i].value });
+                    }
+                }
+                structurePilotes.push({ nom, ir, typeRelais, indispos });
+            });
+
+            const dataSauvegarde = {
+                nomCourse: document.getElementById('nomCourse').value,
+                courseDuree: document.getElementById('courseDuree').value,
+                heureDepart: document.getElementById('heureDepart').value,
+                tempsTour: document.getElementById('tempsTour').value,
+                capaciteReservoir: document.getElementById('capaciteReservoir').value,
+                consoTour: document.getElementById('consoTour').value,
+                tempsPit: document.getElementById('tempsPit').value,
+                pilotes: structurePilotes,
+                incidents: incidentsEnregistres
+            };
+
+            const nomFichier = "Configuration_" + obtenirNomFichierPropre() + ".json";
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataSauvegarde, null, 2));
+            const lienTelechargement = document.createElement('a');
+            lienTelechargement.setAttribute("href", dataStr);
+            lienTelechargement.setAttribute("download", nomFichier);
+            document.body.appendChild(lienTelechargement);
+            lienTelechargement.click();
+            document.body.removeChild(lienTelechargement);
+        }
+
+        function importerFichierStrategie(input) {
+            const fichier = input.files[0];
+            if (!fichier) return;
+
+            const lecteur = new FileReader();
+            lecteur.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    document.getElementById('nomCourse').value = data.nomCourse || "";
+                    document.getElementById('courseDuree').value = data.courseDuree || 360;
+                    document.getElementById('heureDepart').value = data.heureDepart || "14:00";
+                    document.getElementById('tempsTour').value = data.tempsTour || "4.01.235";
+                    document.getElementById('capaciteReservoir').value = data.capaciteReservoir || 100;
+                    document.getElementById('consoTour').value = data.consoTour || 3.45;
+                    document.getElementById('tempsPit').value = data.tempsPit || 45;
+                    incidentsEnregistres = data.incidents || {};
+
+                    document.getElementById('listePilotes').innerHTML = "";
+                    
+                    if (data.pilotes && data.pilotes.length > 0) {
+                        data.pilotes.forEach(p => {
+                            let pId = ajouterCartePilote(p.nom, p.ir, p.typeRelais);
+                            if (p.indispos) {
+                                p.indispos.forEach(ind => {
+                                    ajouterIndispoLigne(pId, ind.de, ind.a);
+                                });
+                            }
+                        });
+                        genererPlanningStrategique(false);
+                    } else {
+                        ajouterCartePilote("", "", "simple");
+                    }
+                } catch (err) {
+                    alert("Erreur lors de la lecture du fichier JSON.");
+                }
+            };
+            lecteur.readAsText(fichier);
+            input.value = "";
+        }
+
+        function convertirChronoEnSecondes(chronoString) {
+            const propre = chronoString.replace(/\./g, ':'); 
+            const parties = propre.split(':');
+            if (parties.length === 3) return (parseFloat(parties[0]) * 60) + parseFloat(parties[1]) + parseFloat("0." + parties[2]);
+            if (parties.length === 2) return (parseFloat(parties[0]) * 60) + parseFloat(parties[1]);
+            return parseFloat(chronoString) || 0;
+        }
+
+        function formaterTempsHMS(totalSecondes) {
+            if(totalSecondes <= 0) return "0 min";
+            const h = Math.floor(totalSecondes / 3600);
+            const m = Math.floor((totalSecondes % 3600) / 60);
+            return h > 0 ? `${h}h ${m}m` : `${m} min`;
+        }
+
+        function formaterHeureHorloge(dateObjet) {
+            return `${dateObjet.getHours().toString().padStart(2, '0')}:${dateObjet.getMinutes().toString().padStart(2, '0')}`;
+        }
+
+        function piloteEstIndisponible(pilote, dateVerif) {
+            if (!pilote.indispos || pilote.indispos.length === 0) return false;
+            const minutesVerif = (dateVerif.getHours() * 60) + dateVerif.getMinutes();
+            for (let ind of pilote.indispos) {
+                if(!ind.de || !ind.a) continue;
+                const [hDe, mDe] = ind.de.split(':').map(Number);
+                const [hA, mA] = ind.a.split(':').map(Number);
+                const minDe = (hDe * 60) + mDe;
+                const minA = (hA * 60) + mA;
+                if (minA > minDe) {
+                    if (minutesVerif >= minDe && minutesVerif < minA) return true;
+                } else {
+                    if (minutesVerif >= minDe || minutesVerif < minA) return true;
+                }
+            }
+            return false;
+        }
+
+        function enregistrerIncident() {
+            const numRelais = parseInt(document.getElementById('incRelaisNum').value);
+            const action = document.getElementById('incAction').value;
+            const heureSortie = document.getElementById('incHeureSortie').value;
+
+            if(!numRelais || !heureSortie) { alert("Remplis l'heure de sortie des stands !"); return; }
+
+            incidentsEnregistres[numRelais] = { action: action, heureSortie: heureSortie };
+            genererPlanningStrategique(false);
+        }
+
+        function genererPlanningStrategique(reinitialiserIncidents = false) {
+            if(reinitialiserIncidents) { incidentsEnregistres = {}; }
+
+            const nomCourseSaisie = document.getElementById('nomCourse').value.trim();
+            const dureeMinutes = parseFloat(document.getElementById('courseDuree').value);
+            const tempsTourSec = convertirChronoEnSecondes(document.getElementById('tempsTour').value.trim());
+            const reservoir = parseFloat(document.getElementById('capaciteReservoir').value);
+            const conso = parseFloat(document.getElementById('consoTour').value);
+            const tempsPitSec = parseFloat(document.getElementById('tempsPit').value) || 0;
+            const heureDepartStr = document.getElementById('heureDepart').value;
+
+            if (!dureeMinutes || tempsTourSec === 0 || !reservoir || !conso || !heureDepartStr) {
+                alert("Vérifie les inputs globaux !"); return;
+            }
+
+            // Gestion de l'affichage du titre de la course
+            const blocTitreImage = document.getElementById('captureTitreCourse');
+            if(nomCourseSaisie !== "") {
+                document.getElementById('titreResultat').innerText = `📊 STRATÉGIE : ${nomCourseSaisie}`;
+                blocTitreImage.innerText = `🏆 ÉPREUVE : ${nomCourseSaisie.toUpperCase()}`;
+                blocTitreImage.style.display = "block";
+            } else {
+                document.getElementById('titreResultat').innerText = "📊 Tableau de Bord Stratégique";
+                blocTitreImage.style.display = "none";
+            }
+
+            const dureeCourseSec = dureeMinutes * 60;
+            const toursParRelais = Math.floor(reservoir / conso); 
+            const dureeRelaisSec = toursParRelais * tempsTourSec;
+
+            const cartes = document.querySelectorAll('.pilote-card');
+            let pilotes = [];
+            cartes.forEach(carte => {
+                const nom = carte.querySelector('.p-nom').value.trim();
+                if (nom === "") return;
+                const ir = parseInt(carte.querySelector('.p-ir').value) || 0;
+                const typeRelais = carte.querySelector('.p-relais').value;
+                
+                let indispos = [];
+                const deInputs = carte.querySelectorAll('.indispo-de');
+                const aInputs = carte.querySelectorAll('.indispo-a');
+                for (let i = 0; i < deInputs.length; i++) {
+                    if (deInputs[i].value !== "" && aInputs[i].value !== "") {
+                        indispos.push({ de: deInputs[i].value, a: aInputs[i].value });
+                    }
+                }
+                pilotes.push({ nom, ir, typeRelais, indispos });
+            });
+
+            if (pilotes.length === 0) { alert("Ajoute au moins un pilote avec un nom !"); return; }
+
+            const [hDep, mDep] = heureDepartStr.split(':');
+            let tempsCourant = new Date();
+            tempsCourant.setHours(parseInt(hDep), parseInt(mDep), 0, 0);
+            const tempsFinCourse = new Date(tempsCourant.getTime() + (dureeCourseSec * 1000));
+            
+            let corpsHtml = "";
+            let numRelais = 1;
+            let totalPits = 0;
+            let toursCumules = 0;
+            let indexBaseRotation = 0; 
+            let optionsSelectHtml = "";
+
+            let forcerIndexPilote = null;
+
+            while (tempsCourant < tempsFinCourse) {
+                let piloteSelectionne = null;
+                let tentativeIndex = 0;
+
+                if (forcerIndexPilote !== null) {
+                    indexBaseRotation = forcerIndexPilote % pilotes.length;
+                    forcerIndexPilote = null;
+                }
+
+                while (tentativeIndex < pilotes.length) {
+                    let indexTester = (indexBaseRotation + tentativeIndex) % pilotes.length;
+                    let pTest = pilotes[indexTester];
+
+                    if (!piloteEstIndisponible(pTest, tempsCourant)) {
+                        piloteSelectionne = pTest;
+                        indexBaseRotation = indexTester;
+                        break;
+                    }
+                    tentativeIndex++;
+                }
+
+                if (!piloteSelectionne) {
+                    piloteSelectionne = { nom: "⚠️ AUCUN PILOTE DISPO !", typeRelais: "simple", ir: 0, indispos: [] };
+                }
+
+                let nombreDeRelais = (piloteSelectionne.typeRelais === "double") ? 2 : 1;
+
+                for (let r = 0; r < nombreDeRelais; r++) {
+                    if (tempsCourant >= tempsFinCourse) break;
+                    if (r > 0 && piloteEstIndisponible(piloteSelectionne, tempsCourant)) break; 
+
+                    let heureDebutRelais = new Date(tempsCourant.getTime());
+                    let actionStand = "PIT STOP (Changement pilote)";
+                    let classeStyleTr = "";
+                    
+                    if (incidentsEnregistres[numRelais]) {
+                        classeStyleTr = "class='row-crash'";
+                        const dataCrash = incidentsEnregistres[numRelais];
+                        
+                        let dateSortie = new Date(tempsCourant.getTime());
+                        const [hS, mS] = dataCrash.heureSortie.split(':').map(Number);
+                        
+                        dateSortie.setHours(hS, mS, 0, 0);
+                        if (dateSortie < heureDebutRelais) { 
+                            dateSortie.setTime(dateSortie.getTime() + (24 * 60 * 60 * 1000)); 
+                        }
+
+                        if (dateSortie >= tempsFinCourse) {
+                            dateSortie = new Date(tempsFinCourse.getTime());
+                        }
+
+                        let dureeRouleeMs = dateSortie.getTime() - heureDebutRelais.getTime();
+                        let toursEffectues = Math.floor((dureeRouleeMs / 1000) / tempsTourSec);
+                        if (toursEffectues < 0) toursEffectues = 0;
+
+                        tempsCourant = new Date(dateSortie.getTime());
+                        toursCumules += toursEffectues;
+                        actionStand = `💥 CRASH - Sortie des stands à ${dataCrash.heureSortie}`;
+
+                        corpsHtml += `
+                            <tr ${classeStyleTr}>
+                                <td><strong>#${numRelais}</strong></td>
+                                <td><span style="color:var(--ascendia-blue); font-weight:bold;">${piloteSelectionne.nom}</span></td>
+                                <td>${formaterHeureHorloge(heureDebutRelais)}</td>
+                                <td>${formaterHeureHorloge(tempsCourant)}</td>
+                                <td>${formaterTempsHMS(dureeRouleeMs/1000)}</td>
+                                <td>${toursEffectues} trs</td>
+                                <td><small style="color:#ff4444; font-weight:bold;">${actionStand}</small></td>
+                            </tr>
+                        `;
+
+                        optionsSelectHtml += `<option value="${numRelais}" ${parseInt(document.getElementById('incRelaisNum')?.value) === numRelais ? 'selected' : ''}>Relais #${numRelais} (${piloteSelectionne.nom})</option>`;
+                        
+                        totalPits++;
+
+                        let idxActuel = pilotes.indexOf(piloteSelectionne);
+                        if (dataCrash.action === "continue") {
+                            forcerIndexPilote = idxActuel; 
+                        } else {
+                            forcerIndexPilote = idxActuel + 1; 
+                        }
+
+                        numRelais++;
+                        break; 
+                    } 
+
+                    let finRelaisMs = tempsCourant.getTime() + (dureeRelaisSec * 1000);
+                    let estDernierRelais = false;
+                    let toursEffectues = toursParRelais;
+
+                    if (finRelaisMs >= tempsFinCourse.getTime()) {
+                        finRelaisMs = tempsFinCourse.getTime();
+                        estDernierRelais = true;
+                        actionStand = "🏁 DRAPEAU À DAMIER !";
+                        toursEffectues = Math.floor(((finRelaisMs - heureDebutRelais.getTime()) / 1000) / tempsTourSec);
+                    } else {
+                        finRelaisMs += (tempsPitSec * 1000);
+                        totalPits++;
+                        if (nombreDeRelais === 2 && r === 0) {
+                            actionStand = "PIT STOP (Full Fuel - Même Pilote)";
+                        }
+                    }
+
+                    tempsCourant = new Date(finRelaisMs);
+                    toursCumules += toursEffectues;
+
+                    corpsHtml += `
+                        <tr>
+                            <td><strong>#${numRelais}</strong></td>
+                            <td><span style="color:var(--ascendia-blue); font-weight:bold;">${piloteSelectionne.nom}</span></td>
+                            <td>${formaterHeureHorloge(heureDebutRelais)}</td>
+                            <td>${formaterHeureHorloge(tempsCourant)}</td>
+                            <td>${formaterTempsHMS((finRelaisMs - heureDebutRelais.getTime())/1000 - (estDernierRelais ? 0 : tempsPitSec))}</td>
+                            <td>${toursEffectues} trs</td>
+                            <td><small>${actionStand}</small></td>
+                        </tr>
+                    `;
+
+                    optionsSelectHtml += `<option value="${numRelais}" ${parseInt(document.getElementById('incRelaisNum')?.value) === numRelais ? 'selected' : ''}>Relais #${numRelais} (${piloteSelectionne.nom})</option>`;
+                    numRelais++;
+                }
+
+                indexBaseRotation++;
+            }
+
+            document.getElementById('corpsPlanning').innerHTML = corpsHtml;
+            document.getElementById('incRelaisNum').innerHTML = optionsSelectHtml;
+            
+            let sommeIr = 0; pilotes.forEach(p => sommeIr += p.ir);
+            let sof = pilotes.length ? Math.round(sommeIr / pilotes.length) : 0;
+
+            document.getElementById('statsMetriques').innerHTML = `
+                <div class="card-stat"><div>SOF Équipe</div><div class="valeur">${sof} iR</div></div>
+                <div class="card-stat"><div>Distance Totale</div><div class="valeur">${toursCumules} trs</div></div>
+                <div class="card-stat"><div>Tours / Relais Max</div><div class="valeur">${toursParRelais} trs</div></div>
+                <div class="card-stat"><div>Durée Relais Max</div><div class="valeur">${formaterTempsHMS(dureeRelaisSec)}</div></div>
+                <div class="card-stat"><div>Total Pits</div><div class="valeur">${totalPits}</div></div>
+            `;
+            
+            document.getElementById('resultatsSection').style.display = 'block';
+            document.getElementById('incidentSection').style.display = 'block';
+        }
+
+        function exporterEnPNG() {
+            const cible = document.getElementById('zoneCapture');
+            const options = { backgroundColor: '#101010', scale: 2, logging: false };
+            
+            const nomFichier = "Planning_" + obtenirNomFichierPropre() + ".png";
+
+            html2canvas(cible, options).then(canvas => {
+                const urlImage = canvas.toDataURL("image/png");
+                const lienTelechargement = document.createElement('a');
+                lienTelechargement.href = urlImage;
+                lienTelechargement.download = nomFichier;
+                document.body.appendChild(lienTelechargement);
+                lienTelechargement.click();
+                document.body.removeChild(lienTelechargement);
+            });
+        }
+    </script>
 </body>
 </html>
