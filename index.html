@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ascendia Racing - Strategy Lab V7.2</title>
+    <title>Ascendia Racing - Strategy Lab V7.3</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=Segoe+UI&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -16,6 +16,7 @@
             --text-main: #f5f5f5;
             --danger-red: #cc0000;
             --success-green: #00cc66;
+            --warning-orange: #ff9900;
         }
 
         body {
@@ -152,17 +153,22 @@
         .btn-io-import { background-color: #2a2a2a; color: var(--ascendia-blue); border: 1px solid var(--ascendia-blue); }
         .btn-io-import:hover { background-color: var(--ascendia-blue); color: black; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background-color: #1a1a1a; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background-color: #1a1a1a; margin-bottom: 25px; }
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid #333; }
         th { background-color: var(--ascendia-blue); color: black; font-family: 'Orbitron', sans-serif; font-size: 0.9em; }
         tr:hover { background-color: #2a2a2a; }
         tr.row-crash { background-color: #421111 !important; border-left: 4px solid var(--danger-red); }
+        tr.row-illegal { background-color: #3d1616 !important; border-left: 4px solid var(--warning-orange); }
 
         .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-top: 20px; margin-bottom: 25px;}
         .card-stat { background-color: var(--bg-card); padding: 20px; border-radius: 8px; border-top: 4px solid var(--ascendia-blue); text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
         .card-stat div:first-child { color: var(--ascendia-silver); text-transform: uppercase; font-size: 12px; font-weight: bold; }
         .card-stat .valeur { font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: bold; color: var(--ascendia-blue); margin-top: 8px; }
         
+        .badge-reglement { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; text-transform: uppercase; }
+        .badge-valide { background-color: rgba(0, 204, 102, 0.2); color: var(--success-green); border: 1px solid var(--success-green); }
+        .badge-invalide { background-color: rgba(204, 0, 0, 0.2); color: #ff4444; border: 1px solid var(--danger-red); }
+
         .capture-zone { background-color: var(--bg-dark); padding: 10px; border-radius: 8px; }
     </style>
 </head>
@@ -278,6 +284,19 @@
                 </thead>
                 <tbody id="corpsPlanning"></tbody>
             </table>
+
+            <h3>⚖️ Régulation Équipage (Règle Fair-Play iRacing 25%)</h3>
+            <table id="tableauReglement">
+                <thead>
+                    <tr>
+                        <th>Pilote</th>
+                        <th>Tours Effectués</th>
+                        <th>Minimum Requis iRacing</th>
+                        <th>Statut Règlementaire</th>
+                    </tr>
+                </thead>
+                <tbody id="corpsReglement"></tbody>
+            </table>
         </div>
     </div>
 
@@ -327,11 +346,9 @@
             zone.appendChild(div);
         }
 
-        // Nettoyage de chaîne pour éviter les caractères foireux dans les noms de fichiers
         function obtenirNomFichierPropre() {
             const saisie = document.getElementById('nomCourse').value.trim();
             if (saisie === "") return "Course";
-            // Nettoyage correct (Garde les lettres minuscules, majuscules et chiffres, remplace le reste par _)
             return saisie.replace(/[^a-zA-Z0-9]/g, "_"); 
         }
 
@@ -481,7 +498,6 @@
                 alert("Vérifie les inputs globaux !"); return;
             }
 
-            // Gestion de l'affichage du titre de la course
             const blocTitreImage = document.getElementById('captureTitreCourse');
             if(nomCourseSaisie !== "") {
                 document.getElementById('titreResultat').innerText = `📊 STRATÉGIE : ${nomCourseSaisie}`;
@@ -498,6 +514,8 @@
 
             const cartes = document.querySelectorAll('.pilote-card');
             let pilotes = [];
+            let compteursToursPilotes = {};
+
             cartes.forEach(carte => {
                 const nom = carte.querySelector('.p-nom').value.trim();
                 if (nom === "") return;
@@ -513,6 +531,7 @@
                     }
                 }
                 pilotes.push({ nom, ir, typeRelais, indispos });
+                compteursToursPilotes[nom] = 0; 
             });
 
             if (pilotes.length === 0) { alert("Ajoute au moins un pilote avec un nom !"); return; }
@@ -554,6 +573,7 @@
 
                 if (!piloteSelectionne) {
                     piloteSelectionne = { nom: "⚠️ AUCUN PILOTE DISPO !", typeRelais: "simple", ir: 0, indispos: [] };
+                    if (!compteursToursPilotes[piloteSelectionne.nom]) compteursToursPilotes[piloteSelectionne.nom] = 0;
                 }
 
                 let nombreDeRelais = (piloteSelectionne.typeRelais === "double") ? 2 : 1;
@@ -588,6 +608,7 @@
 
                         tempsCourant = new Date(dateSortie.getTime());
                         toursCumules += toursEffectues;
+                        compteursToursPilotes[piloteSelectionne.nom] += toursEffectues;
                         actionStand = `💥 CRASH - Sortie des stands à ${dataCrash.heureSortie}`;
 
                         corpsHtml += `
@@ -636,6 +657,7 @@
 
                     tempsCourant = new Date(finRelaisMs);
                     toursCumules += toursEffectues;
+                    compteursToursPilotes[piloteSelectionne.nom] += toursEffectues;
 
                     corpsHtml += `
                         <tr>
@@ -659,6 +681,31 @@
             document.getElementById('corpsPlanning').innerHTML = corpsHtml;
             document.getElementById('incRelaisNum').innerHTML = optionsSelectHtml;
             
+            // --- CALCUL DU QUOTA MINIMUM SELON LA REGLE OFFICIELLE IRACING (25% de la moyenne équitable) ---
+            const nombrePilotesEquipe = pilotes.length;
+            const quotaMinimumTours = Math.floor((toursCumules / nombrePilotesEquipe) * 0.25);
+
+            let reglementHtml = "";
+            for (let nomPilote in compteursToursPilotes) {
+                if (nomPilote === "⚠️ AUCUN PILOTE DISPO !") continue;
+                const totalFaits = compteursToursPilotes[nomPilote];
+                const respecteRegle = totalFaits >= quotaMinimumTours;
+                
+                const badgeStyle = respecteRegle ? "badge-reglement badge-valide" : "badge-reglement badge-invalide";
+                const texteStatut = respecteRegle ? "✅ Conforme" : "❌ NON CONFORME (Sous-Disqualifié)";
+                const ligneStyle = respecteRegle ? "" : "class='row-illegal'";
+
+                reglementHtml += `
+                    <tr ${ligneStyle}>
+                        <td><strong>${nomPilote}</strong></td>
+                        <td style="font-weight:bold; color:${respecteRegle ? 'var(--success-green)' : '#ff4444'}">${totalFaits} trs</td>
+                        <td>${quotaMinimumTours} trs <small style="color:#aaa;">(25% de ${Math.round(toursCumules / nombrePilotesEquipe)} trs/moy)</small></td>
+                        <td><span class="${badgeStyle}">${texteStatut}</span></td>
+                    </tr>
+                `;
+            }
+            document.getElementById('corpsReglement').innerHTML = reglementHtml;
+
             let sommeIr = 0; pilotes.forEach(p => sommeIr += p.ir);
             let sof = pilotes.length ? Math.round(sommeIr / pilotes.length) : 0;
 
