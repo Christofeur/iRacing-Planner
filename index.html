@@ -648,14 +648,24 @@
         }
 
         function enregistrerIncident() {
-            const numRelais = parseInt(document.getElementById('incRelaisNum').value);
-            const action = document.getElementById('incAction').value;
-            const heureSortie = document.getElementById('incHeureSortie').value;
-            if(!numRelais || !heureSortie) return alert("Remplis l'heure de sortie !");
+    const numRelais = parseInt(document.getElementById('incRelaisNum').value);
+    const action = document.getElementById('incAction').value;
+    const heureSortie = document.getElementById('incHeureSortie').value;
+    
+    if(!numRelais || !heureSortie) return alert("Remplis l'heure de sortie !");
 
-            incidentsEnregistres[numRelais] = { action: action, heureSortie: heureSortie };
-            genererPlanningStrategique(false, true);
-        }
+    // On enregistre l'incident
+    incidentsEnregistres[numRelais] = { action: action, heureSortie: heureSortie };
+    
+    // MODIFICATION : 
+    // Si l'action est "même pilote", on va marquer le relais suivant comme "fusionnable"
+    // pour que genererPlanningStrategique sache qu'il ne faut pas créer une ligne en plus.
+    if (action.includes("Même Pilote")) {
+        incidentsEnregistres[numRelais].fusionnerSuivant = true;
+    }
+
+    genererPlanningStrategique(false, true);
+}
 
         function genererPlanningStrategique(reinitialiserIncidents = false, pousserReseau = true) {
             if(reinitialiserIncidents) { 
@@ -761,36 +771,38 @@
                         let dateSortie = new Date(tempsCourant.getTime());
                         const [hS, mS] = dataCrash.heureSortie.split(':').map(Number);
                         dateSortie.setHours(hS, mS, 0, 0);
-                        if (dateSortie < heureDebutRelais) dateSortie.setTime(dateSortie.getTime() + 86400000);
-                        if (dateSortie >= tempsFinCourse) dateSortie = new Date(tempsFinCourse.getTime());
-
+                        
                         let dureeRouleeMs = dateSortie.getTime() - heureDebutRelais.getTime();
                         let toursEffectues = Math.max(0, Math.floor((dureeRouleeMs / 1000) / tempsTourSec));
 
                         tempsCourant = new Date(dateSortie.getTime());
-                        toursCumules += toursEffectues;
                         compteursToursPilotes[piloteSelectionne.nom] += toursEffectues;
-                        actionStand = `💥 CRASH - Sortie à ${dataCrash.heureSortie}`;
-
+                        
                         planningDataStructure.push({ num: numRelais, pilote: piloteSelectionne.nom, debut: heureDebutRelais.getTime(), fin: tempsCourant.getTime() });
 
                         corpsHtml += `
                             <tr id="row-relais-${numRelais}" class="row-crash">
                                 <td><strong>#${numRelais}</strong></td>
-                                <td><span style="color:var(--ascendia-blue); font-weight:bold;">${piloteSelectionne.nom}</span></td>
+                                <td>${piloteSelectionne.nom}</td>
                                 <td>${formaterHeureHorloge(heureDebutRelais)}</td>
                                 <td>${formaterHeureHorloge(tempsCourant)}</td>
                                 <td>${formaterTempsHMS(dureeRouleeMs/1000)}</td>
                                 <td>${toursEffectues} trs</td>
-                                <td><small style="color:#ff4444; font-weight:bold;">${actionStand}</small></td>
+                                <td><small style="color:#ff4444;">💥 CRASH</small></td>
                             </tr>
                         `;
-                        optionsSelectHtml += `<option value="${numRelais}">Relais #${numRelais} (${piloteSelectionne.nom})</option>`;
-                        totalPits++;
-                        let idxActuel = pilotes.indexOf(piloteSelectionne);
-                        forcerIndexPilote = (dataCrash.action === "continue") ? idxActuel : idxActuel + 1;
-                        numRelais++; break; 
-                    } 
+
+                        // C'EST ICI LA CLÉ : on force le saut de la suite de la boucle pour ce relais
+                        numRelais++;
+                        if (dataCrash.action === "continue") {
+                            // On ne touche pas à indexBaseRotation pour rester sur le même pilote
+                            continue; 
+                        } else {
+                            // Changement de pilote classique
+                            indexBaseRotation++; 
+                            continue;
+                        }
+                    }
 
                     let finRelaisMs = tempsCourant.getTime() + (dureeRelaisSec * 1000);
                     let estDernierRelais = false;
