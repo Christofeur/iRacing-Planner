@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ascendia Racing - Strategy Lab V8.0 Peer-Live</title>
+    <title>Ascendia Racing - Strategy Lab V8.1 Peer-Live</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Segoe+UI&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
@@ -183,11 +183,10 @@
 
     <div class="connexion-panel">
         <div>
-            <span style="font-family:'Orbitron', sans-serif; font-weight:bold; color:var(--ascendia-blue);">🔗 COCONNEXION ÉQUIPE :</span>
-            <span id="statutPeer" style="margin-left: 10px;">Initialisation...</span>
+            <span style="font-family:'Orbitron', sans-serif; font-weight:bold; color:var(--ascendia-blue);">🔗 CONNEXION ÉQUIPE :</span>
+            <span id="statutPeer" style="margin-left: 10px;">Initialisation du réseau...</span>
         </div>
-        <div id="zoneControlesPeer" style="display: flex; gap: 10px; align-items: center;">
-            </div>
+        <div id="zoneControlesPeer" style="display: flex; gap: 10px; align-items: center;"></div>
     </div>
 
     <div class="grid-layout" id="zoneInputsGlobaux">
@@ -342,6 +341,7 @@
         let piloteIdCounter = 0;
         let incidentsEnregistres = {}; 
         let planningDataStructure = []; 
+        let cachePilotesReseau = []; // Stocke temporairement les pilotes synchronisés via PeerJS
 
         // Variables Système Live
         let liveIntervalId = null;
@@ -351,10 +351,10 @@
         let liveDureeCourseMs = 0;
         let liveVitesseFacteur = 1;
 
-        // Variables Peer-to-Peer (Réseau Pilotes)
+        // Variables Peer-to-Peer
         let peer = null;
-        let connexionsPilotes = []; // Liste des pilotes connectés à l'ingénieur
-        let connexionIngenieur = null; // Connexion du pilote vers l'ingénieur
+        let connexionsPilotes = []; 
+        let connexionIngenieur = null; 
         let estModeSpectateur = false; 
 
         window.onload = function() {
@@ -362,14 +362,13 @@
             initialiserReseauPeer();
         };
 
-        // --- CORE RESEAU (PEER TO PEER SANS SERVEUR) ---
+        // --- CORE RESEAU (PEER TO PEER) ---
         function initialiserReseauPeer() {
-            // Création d'un id aléatoire ou connexion au réseau global PeerJS
             peer = new Peer();
             
             peer.on('open', function(id) {
                 document.getElementById('statutPeer').innerHTML = `Prêt ! Code de ta session : <strong style="color:white; background:#333; padding:2px 6px; border-radius:3px;">${id}</strong>`;
-                configurerZoneControles(id);
+                configurerZoneControles();
             });
 
             peer.on('error', function(err) {
@@ -377,17 +376,15 @@
                 console.error(err);
             });
 
-            // Quand l'ingénieur reçoit une connexion d'un de ses pilotes
             peer.on('connection', function(conn) {
                 connexionsPilotes.push(conn);
                 conn.on('open', function() {
-                    // Dès qu'un pilote arrive, l'ingénieur lui pousse la stratégie actuelle
                     envoyerDonneesAChacun();
                 });
             });
         }
 
-        function configurerZoneControles(monId) {
+        function configurerZoneControles() {
             const zone = document.getElementById('zoneControlesPeer');
             zone.innerHTML = `
                 <span style="color:#aaa; font-size:12px;">Rejoindre un coéquipier :</span>
@@ -407,14 +404,12 @@
                 estModeSpectateur = true;
                 document.getElementById('statutPeer').innerHTML = `🟢 Connecté au Live de la Team !`;
                 
-                // Masquer les outils de saisie (Vu qu'on regarde le live du chef)
                 document.getElementById('zoneInputsGlobaux').style.display = 'none';
                 document.getElementById('btnGenererPrincipal').style.display = 'none';
                 document.getElementById('liveControlesAdmin').style.display = 'none';
                 document.getElementById('incidentSection').style.display = 'none';
             });
 
-            // Écouter les ordres reçus du chef de stratégie
             connexionIngenieur.on('data', function(data) {
                 if (data.type === "SYNCHRONISATION_COMPLETE") {
                     importerDonneesBrutesDepuisReseau(data.payload);
@@ -428,7 +423,21 @@
         function envoyerDonneesAChacun() {
             if(connexionsPilotes.length === 0) return;
             
-            // Collecter l'état complet des inputs
+            let structurePilotes = [];
+            document.querySelectorAll('.pilote-card').forEach(carte => {
+                const nom = carte.querySelector('.p-nom').value.trim();
+                if (nom === "") return;
+                const ir = carte.querySelector('.p-ir').value;
+                const typeRelais = carte.querySelector('.p-relais').value;
+                let indispos = [];
+                carte.querySelectorAll('.indispo-row').forEach(row => {
+                    let de = row.querySelector('.indispo-de').value;
+                    let a = row.querySelector('.indispo-a').value;
+                    if(de && a) indispos.push({ de, a });
+                });
+                structurePilotes.push({ nom, ir, typeRelais, indispos });
+            });
+
             let payload = {
                 nomCourse: document.getElementById('nomCourse').value,
                 courseDuree: document.getElementById('courseDuree').value,
@@ -437,6 +446,7 @@
                 capaciteReservoir: document.getElementById('capaciteReservoir').value,
                 consoTour: document.getElementById('consoTour').value,
                 tempsPit: document.getElementById('tempsPit').value,
+                pilotes: structurePilotes,
                 incidents: incidentsEnregistres,
                 liveCourseEnCours: liveCourseEnCours,
                 liveVitesseFacteur: liveVitesseFacteur
@@ -460,8 +470,9 @@
             incidentsEnregistres = data.incidents;
             liveCourseEnCours = data.liveCourseEnCours;
             liveVitesseFacteur = data.liveVitesseFacteur;
+            cachePilotesReseau = data.pilotes || [];
 
-            // Relancer les calculs mathématiques
+            // Force le calcul automatique complet chez l'invité pour tout afficher d'un coup
             genererPlanningStrategique(false, false);
         }
 
@@ -679,28 +690,34 @@
             let pilotes = [];
             let compteursToursPilotes = {};
 
-            document.querySelectorAll('.pilote-card').forEach(carte => {
-                const nom = carte.querySelector('.p-nom').value.trim();
-                if (nom === "") return;
-                const ir = parseInt(carte.querySelector('.p-ir').value) || 0;
-                const typeRelais = carte.querySelector('.p-relais').value;
-                let indispos = [];
-                carte.querySelectorAll('.indispo-row').forEach(row => {
-                    let de = row.querySelector('.indispo-de').value;
-                    let a = row.querySelector('.indispo-a').value;
-                    if(de && a) indispos.push({ de, a });
+            if (estModeSpectateur) {
+                // En mode spectateur, on utilise la liste de pilotes reçue du réseau
+                pilotes = cachePilotesReseau;
+            } else {
+                // En mode ingénieur, on lit les cartes affichées à l'écran
+                document.querySelectorAll('.pilote-card').forEach(carte => {
+                    const nom = carte.querySelector('.p-nom').value.trim();
+                    if (nom === "") return;
+                    const ir = parseInt(carte.querySelector('.p-ir').value) || 0;
+                    const typeRelais = carte.querySelector('.p-relais').value;
+                    let indispos = [];
+                    carte.querySelectorAll('.indispo-row').forEach(row => {
+                        let de = row.querySelector('.indispo-de').value;
+                        let a = row.querySelector('.indispo-a').value;
+                        if(de && a) indispos.push({ de, a });
+                    });
+                    pilotes.push({ nom, ir, typeRelais, indispos });
                 });
-                pilotes.push({ nom, ir, typeRelais, indispos });
-                compteursToursPilotes[nom] = 0; 
-            });
+            }
 
+            pilotes.forEach(p => { compteursToursPilotes[p.nom] = 0; });
             if (pilotes.length === 0) return;
 
             const [hDep, mDep] = heureDepartStr.split(':');
             let tempsCourant = new Date();
             tempsCourant.setHours(parseInt(hDep), parseInt(mDep), 0, 0);
             
-            liveDateSimulee = new Date(tempsCourant.getTime());
+            if (!liveDateSimulee) liveDateSimulee = new Date(tempsCourant.getTime());
             liveDateFinCourse = new Date(tempsCourant.getTime() + (dureeCourseSec * 1000));
             liveDureeCourseMs = dureeCourseSec * 1000;
 
@@ -782,7 +799,13 @@
                     if (finRelaisMs >= tempsFinCourse.getTime()) {
                         finRelaisMs = tempsFinCourse.getTime(); estDernierRelais = true; actionStand = "🏁 DAMIER !";
                         toursEffectues = Math.floor(((finRelaisMs - heureDebutRelais.getTime()) / 1000) / tempsTourSec);
-                    } else { finRelaisMs += (tempsPitSec * 1000); totalPits++; }
+                    } else { 
+                        finRelaisMs += (tempsPitSec * 1000); 
+                        totalPits++;
+                        if (nombreDeRelais === 2 && r === 0) {
+                            actionStand = "PIT STOP (Full Fuel - Même Pilote)";
+                        }
+                    }
 
                     tempsCourant = new Date(finRelaisMs);
                     toursCumules += toursEffectues;
@@ -810,8 +833,8 @@
             document.getElementById('corpsPlanning').innerHTML = corpsHtml;
             document.getElementById('incRelaisNum').innerHTML = optionsSelectHtml;
             
-            // Quota
-            const nombrePilotesEquipe = pilotes.length;
+            // Calcul Quota 25% Fair-Play iRacing
+            const nombrePilotesEquipe = pilotes.filter(p => p.nom !== "⚠️ AUCUN PILOTE DISPO !").length || 1;
             const quotaMinimumTours = Math.floor((toursCumules / nombrePilotesEquipe) * 0.25);
 
             let reglementHtml = "";
@@ -830,7 +853,7 @@
             }
             document.getElementById('corpsReglement').innerHTML = reglementHtml;
 
-            let sof = pilotes.length ? Math.round(pilotes.reduce((acc, p) => acc + p.ir, 0) / pilotes.length) : 0;
+            let sof = pilotes.length ? Math.round(pilotes.reduce((acc, p) => acc + parseInt(p.ir || 0), 0) / pilotes.length) : 0;
             document.getElementById('statsMetriques').innerHTML = `
                 <div class="card-stat"><div>SOF Équipe</div><div class="valeur">${sof} iR</div></div>
                 <div class="card-stat"><div>Distance Totale</div><div class="valeur">${toursCumules} trs</div></div>
@@ -838,14 +861,17 @@
             `;
             
             document.getElementById('resultatsSection').style.display = 'block';
-            document.getElementById('incidentSection').style.display = 'block';
             document.getElementById('liveSection').style.display = 'block';
+            
+            if (!estModeSpectateur) {
+                document.getElementById('incidentSection').style.display = 'block';
+            }
             
             if(!liveCourseEnCours) reinitialiserVisuelsLive();
             if(pousserReseau) envoyerDonneesAChacun();
         }
 
-        // --- ENTRAINEMENT LIVE & CLOCK ---
+        // --- GESTION DU FIL CHRONO LIVE ---
         function reinitialiserVisuelsLive() {
             document.getElementById('liveCourseRestant').innerText = formaterTempsPreciss(liveDureeCourseMs);
             document.getElementById('liveCourseHorloge').innerText = `Course non démarrée`;
@@ -887,7 +913,6 @@
                 liveDateSimulee.setTime(liveDateSimulee.getTime() + ajoutMs);
                 calculerEtMettreAJourLive();
 
-                // Pousser le top horloge aux pilotes spectateurs
                 if (connexionsPilotes.length > 0) {
                     connexionsPilotes.forEach(conn => {
                         if(conn.open) {
