@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>
+        Ascendia Endurance Planner
+    </title>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&display=swap"
+        rel="stylesheet">
+
+    <link
+        rel="stylesheet"
+        href="style.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- HEADER -->
+
+    <header class="topbar">
+
+        <div class="logo-box">
+
+            <img
+                src="assets/logo.png"
+                class="logo"
+                alt="Ascendia Racing">
+
+        </div>
+
+        <div class="title-box">
+
+            <h1>
+                PLANNING ENDURANCE & PIT WALL
+            </h1>
+
+            <p>
+                iRacing Strategy Planner
+            </p>
+
+        </div>
+
+    </header>
+
+    <!-- GRID -->
+
+    <div class="main-grid">
+
+        <!-- LEFT -->
+
+        <div class="left-column">
+
+            <!-- COURSE -->
+
+            <section class="panel">
+
+                <h2>
+                    1. LA COURSE
+                </h2>
+
+                <div class="field">
+
+                    <label>
+                        Nom de course
+                    </label>
+
+                    <input
+                        type="text"
+                        id="raceName"
+                        placeholder="Ex : 24h Spa">
+
+                </div>
+
+                <div class="field">
+
+                    <label>
+                        Durée course (minutes)
+                    </label>
+
+                    <input
+                        type="number"
+                        id="raceDuration"
+                        placeholder="Ex : 1440">
+
+                </div>
+
+                <div class="field">
+
+                    <label>
+                        Heure départ
+                    </label>
+
+                    <input
+                        type="time"
+                        id="startTime">
+
+                </div>
+
+                <div class="field">
+
+                    <label>
+                        Temps au tour
+                    </label>
+
+                    <input
+                        type="text"
+                        id="lapTime"
+                        placeholder="MM:SS.mmm">
+
+                </div>
+
+            </section>
+
+            <!-- CAR -->
+
+            <section class="panel">
+
+                <h2>
+                    2. VOITURE & STANDS
+                </h2>
+
+                <div class="field">
+
+                    <label>
+                        Réservoir (L)
+                    </label>
+
+                    <input
+                        type="number"
+                        id="fuelCapacity"
+                        placeholder="Ex : 100">
+
+                </div>
+
+                <div class="field">
+
+                    <label>
+                        Conso/tour
+                    </label>
+
+                    <input
+                        type="number"
+                        id="fuelPerLap"
+                        step="0.01"
+                        placeholder="Ex : 3.52">
+
+                </div>
+
+                <div class="field">
+
+                    <label>
+                        Temps pit (sec)
+                    </label>
+
+                    <input
+                        type="number"
+                        id="pitTime"
+                        placeholder="Ex : 45">
+
+                </div>
+
+            </section>
+
+            <!-- STRATEGY -->
+
+            <section class="panel">
+
+                <h2>
+                    3. STRATÉGIE
+                </h2>
+
+                <div class="field">
+
+                    <label>
+                        Type relais
+                    </label>
+
+                    <select id="relayType">
+
+                        <option value="simple">
+                            Relais simples
+                        </option>
+
+                        <option value="double">
+                            Doubles relais
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <button
+                    class="btn export-btn"
+                    type="button"
+                    onclick="exportConfig()">
+
+                    📁 EXPORT CONFIG
+
+                </button>
+
+                <button
+                    class="btn import-btn"
+                    type="button"
+                    onclick="importConfig()">
+
+                    📂 IMPORT CONFIG
+
+                </button>
+
+            </section>
+
+            <!-- INCIDENTS -->
+
+            <section class="panel">
+
+                <h2>
+                    4. INCIDENTS COURSE
+                </h2>
+
+                <div class="field">
+
+                    <label>
+                        Relais impacté
+                    </label>
+
+                    <select id="incidentStint">
+
+                        <option value="">
+                            Choisir un relais
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div class="field">
+
+                    <label>
+                        Heure réelle sortie stands
+                    </label>
+
+                    <input
+                        type="time"
+                        id="incidentTime">
+
+                </div>
+
+                <div class="field">
+
+                    <label>
+                        Pilote reprise
+                    </label>
+
+                    <select id="incidentDriverMode">
+
+                        <option value="same">
+                            Même pilote
+                        </option>
+
+                        <option value="next">
+                            Pilote suivant
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <button
+                    class="generate-btn"
+                    type="button"
+                    onclick="applyIncident()">
+
+                    RECALCULER INCIDENT
+
+                </button>
+
+            </section>
+
+            <!-- IRACING RULE -->
+
+            <section class="panel">
+
+                <h2>
+                    5. RÈGLE iRACING
+                </h2>
+
+                <div id="iracingRuleResult">
+
+                    Aucun planning généré.
+
+                </div>
+
+            </section>
+
+        </div>
+
+        <!-- RIGHT -->
+
+        <div class="right-column">
+
+            <section class="panel big-panel">
+
+                <div class="panel-header">
+
+                    <h2>
+                        6. ÉQUIPAGE
+                    </h2>
+
+                    <div class="sof-badge">
+
+                        SOF :
+                        <span id="sofValue">
+                            0
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <div id="driversContainer"></div>
+
+                <button
+                    class="add-driver-btn"
+                    type="button"
+                    onclick="addDriver()">
+
+                    + AJOUTER PILOTE
+
+                </button>
+
+                <div class="start-driver-box">
+
+                    <div class="field">
+
+                        <label>
+                            Pilote départ
+                        </label>
+
+                        <select id="startingDriver">
+
+                            <option value="">
+                                Choisir pilote
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </div>
+
+    </div>
+
+    <!-- GENERATE -->
+
+    <button
+        class="generate-btn"
+        type="button"
+        onclick="generateStrategy()">
+
+        GÉNÉRER LE PLANNING 🚀
+
+    </button>
+
+    <!-- PLANNING -->
+
+    <section
+        class="panel planning-panel"
+        id="planningExport">
+
+        <div class="panel-header export-header">
+
+            <div>
+
+                <h2 id="exportRaceTitle">
+
+                    PLANNING COURSE
+
+                </h2>
+
+                <div class="export-infos">
+
+    <div class="export-badge">
+        SOF :
+        <strong id="exportSOF">
+            0
+        </strong>
+    </div>
+
+    <div class="export-badge">
+        ENDURANCE STRATEGY
+    </div>
+
+</div>
+
+            </div>
+
+            <div class="planning-actions no-export">
+
+                <button
+                    class="btn"
+                    type="button"
+                    onclick="exportImage()">
+
+                    EXPORT IMAGE
+
+                </button>
+
+            </div>
+
+        </div>
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>#</th>
+
+                    <th>Début</th>
+
+                    <th>Fin</th>
+
+                    <th>Pilote</th>
+
+                    <th>Tours</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody id="strategyTable"></tbody>
+
+        </table>
+
+    </section>
+
+</div>
+
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+<script src="script.js"></script>
+
+</body>
+</html>
+

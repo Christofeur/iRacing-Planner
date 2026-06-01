@@ -1,0 +1,866 @@
+* {
+
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+
+}
+
+body {
+
+    background:
+        radial-gradient(circle at top,
+        #16243d 0%,
+        #0b0f17 45%);
+
+    color: white;
+
+    font-family:
+        'Orbitron',
+        sans-serif;
+
+    padding: 30px;
+
+    min-height: 100vh;
+
+}
+
+.container {
+
+    max-width: 1600px;
+    margin: auto;
+
+}
+
+.topbar {
+
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    margin-bottom: 35px;
+
+    padding: 25px;
+
+    background:
+        rgba(19,27,41,0.75);
+
+    border-radius: 22px;
+
+    border:
+        1px solid rgba(0,195,255,0.15);
+
+    box-shadow:
+        0 0 25px rgba(0,195,255,0.08);
+
+    backdrop-filter: blur(10px);
+
+}
+
+.logo {
+
+    width: 100px;
+
+    filter:
+        drop-shadow(
+            0 0 15px rgba(0,195,255,0.35)
+        );
+
+}
+
+.title-box h1 {
+
+    font-size: 34px;
+    color: #00c3ff;
+
+    letter-spacing: 2px;
+
+    text-shadow:
+        0 0 12px rgba(0,195,255,0.35);
+
+}
+
+.title-box p {
+
+    color: #8fa3bd;
+    margin-top: 8px;
+
+}
+
+.main-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        420px 1fr;
+
+    gap: 25px;
+
+    margin-bottom: 30px;
+
+}
+
+.left-column,
+.right-column {
+
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+
+}
+
+.panel {
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(19,27,41,0.96),
+            rgba(14,20,31,0.96)
+        );
+
+    border-radius: 22px;
+
+    padding: 28px;
+
+    border:
+        1px solid rgba(255,255,255,0.05);
+
+    box-shadow:
+        0 0 25px rgba(0,0,0,0.35);
+
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+
+}
+
+.panel:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 0 30px rgba(0,195,255,0.12);
+
+}
+
+.panel h2 {
+
+    margin-bottom: 22px;
+
+    color: #00c3ff;
+
+    letter-spacing: 1px;
+
+    text-shadow:
+        0 0 10px rgba(0,195,255,0.25);
+
+}
+
+.field {
+
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+
+}
+
+label {
+
+    color: #b8c7d9;
+    font-size: 13px;
+
+}
+
+input,
+select {
+
+    background: #0f1623;
+
+    border:
+        1px solid #223049;
+
+    color: white;
+
+    padding: 13px;
+
+    border-radius: 12px;
+
+    font-family:
+        'Orbitron',
+        sans-serif;
+
+    transition:
+        border 0.2s ease,
+        box-shadow 0.2s ease;
+
+}
+
+input:focus,
+select:focus {
+
+    outline: none;
+
+    border:
+        1px solid #00c3ff;
+
+    box-shadow:
+        0 0 12px rgba(0,195,255,0.25);
+
+}
+
+button {
+
+    cursor: pointer;
+
+    font-family:
+        'Orbitron',
+        sans-serif;
+
+}
+
+.btn,
+.generate-btn,
+.add-driver-btn,
+.small-btn {
+
+    background:
+        linear-gradient(
+            135deg,
+            #00c3ff,
+            #00f0ff
+        );
+
+    color: #08111f;
+
+    border: none;
+
+    padding: 13px 18px;
+
+    border-radius: 12px;
+
+    font-weight: bold;
+
+    margin-top: 10px;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+
+    box-shadow:
+        0 0 18px rgba(0,195,255,0.18);
+
+}
+
+.btn:hover,
+.generate-btn:hover,
+.add-driver-btn:hover,
+.small-btn:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 0 25px rgba(0,195,255,0.35);
+
+}
+
+.driver-card {
+
+    background:
+        linear-gradient(
+            180deg,
+            #111a29,
+            #0d1522
+        );
+
+    padding: 20px;
+
+    border-radius: 18px;
+
+    margin-bottom: 20px;
+
+    border:
+        1px solid rgba(255,255,255,0.04);
+
+}
+
+.driver-top {
+
+    display: flex;
+    gap: 10px;
+    align-items: center;
+
+}
+
+.driver-top input {
+
+    flex: 1;
+
+}
+
+.remove-btn {
+
+    background: #ff3b5f;
+
+    border: none;
+
+    color: white;
+
+    padding: 10px 14px;
+
+    border-radius: 10px;
+
+    transition:
+        transform 0.2s ease;
+
+}
+
+.remove-btn:hover {
+
+    transform: scale(1.05);
+
+}
+
+.sof-badge {
+
+    background: #0f1623;
+
+    padding: 12px 18px;
+
+    border-radius: 12px;
+
+    color: #00c3ff;
+
+    border:
+        1px solid rgba(0,195,255,0.15);
+
+    box-shadow:
+        inset 0 0 15px rgba(0,195,255,0.08);
+
+}
+
+.panel-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 20px;
+
+}
+
+.planning-panel {
+
+    overflow: hidden;
+
+}
+
+table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+
+    overflow: hidden;
+
+    border-radius: 16px;
+
+}
+
+th {
+
+    background:
+        linear-gradient(
+            90deg,
+            #101927,
+            #16243a
+        );
+
+    padding: 16px;
+
+    text-align: left;
+
+    color: #00c3ff;
+
+    font-size: 14px;
+
+    letter-spacing: 1px;
+
+}
+
+tr {
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+
+}
+
+tr:hover {
+
+    background:
+        rgba(0,195,255,0.05);
+
+}
+
+td {
+
+    padding: 16px;
+
+    border-bottom:
+        1px solid rgba(255,255,255,0.05);
+
+    color: #d7e5f5;
+
+}
+
+tbody tr:nth-child(even) {
+
+    background:
+        rgba(255,255,255,0.015);
+
+}
+
+.export-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: flex-start;
+
+}
+
+.export-infos {
+
+    display: flex;
+    gap: 12px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+
+}
+
+.export-badge {
+
+    background:
+        rgba(0,195,255,0.08);
+
+    border:
+        1px solid rgba(0,195,255,0.15);
+
+    padding: 10px 14px;
+
+    border-radius: 12px;
+
+    color: #b8dfff;
+
+    font-size: 13px;
+
+    box-shadow:
+        inset 0 0 10px rgba(0,195,255,0.05);
+
+}
+
+.export-badge strong {
+
+    color: #00c3ff;
+
+}
+
+.export-mode .no-export {
+
+    display: none !important;
+
+}
+
+#iracingRuleResult {
+
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+}
+
+#iracingRuleResult strong {
+
+    display: inline-block;
+    margin-top: 5px;
+
+}
+
+.generate-btn {
+
+    width: 100%;
+
+    font-size: 15px;
+
+    letter-spacing: 1px;
+
+}
+
+@media screen and (max-width: 1100px) {
+
+    .main-grid {
+
+        grid-template-columns: 1fr;
+
+    }
+
+    .panel-header,
+    .export-header,
+    .topbar {
+
+        flex-direction: column;
+        align-items: flex-start;
+
+    }
+
+    table {
+
+        display: block;
+        overflow-x: auto;
+
+    }
+
+}
+
+@media screen and (max-width: 700px) {
+
+    body {
+
+        padding: 15px;
+
+    }
+
+    .panel {
+
+        padding: 20px;
+
+    }
+
+    .title-box h1 {
+
+        font-size: 24px;
+
+    }
+
+    .btn,
+    .generate-btn,
+    .add-driver-btn {
+
+        width: 100%;
+
+    }
+
+
+}
+
+/* =========================
+   ULTRA EXPORT MODE CLEAN
+========================= */
+
+.export-mode {
+
+    background:
+        radial-gradient(
+            circle at top,
+            #1a2d4a 0%,
+            #0b0f17 55%
+        ) !important;
+
+    padding: 50px !important;
+
+}
+
+/* =========================
+   EXPORT PANEL
+========================= */
+
+.export-mode #planningExport {
+
+    position: relative;
+
+    overflow: hidden;
+
+    border:
+        1px solid rgba(0,225,255,0.12);
+
+    border-radius: 28px;
+
+    box-shadow:
+        0 0 40px rgba(0,0,0,0.45);
+
+}
+
+.export-mode #planningExport::before {
+
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    background:
+        radial-gradient(
+            circle at top right,
+            rgba(0,225,255,0.10),
+            transparent 40%
+        );
+
+    pointer-events: none;
+
+}
+
+.export-mode #planningExport::after {
+
+    content: "ASCENDIA RACING";
+
+    position: absolute;
+
+    top: 35px;
+    right: 40px;
+
+    font-size: 72px;
+
+    font-weight: bold;
+
+    color:
+        rgba(255,255,255,0.03);
+
+    letter-spacing: 4px;
+
+    pointer-events: none;
+
+}
+
+/* =========================
+   EXPORT HEADER
+========================= */
+
+.export-mode .export-header {
+
+    position: relative;
+
+    margin-bottom: 40px;
+
+    padding-bottom: 30px;
+
+    border-bottom:
+        1px solid rgba(0,225,255,0.10);
+
+}
+
+.export-mode .export-header::after {
+
+    content: "";
+
+    position: absolute;
+
+    bottom: -1px;
+    left: 0;
+
+    width: 220px;
+    height: 2px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #00e1ff,
+            transparent
+        );
+
+}
+
+/* =========================
+   TITLE
+========================= */
+
+.export-mode h2 {
+
+    font-size: 56px !important;
+
+    line-height: 1;
+
+    margin-bottom: 18px;
+
+    color: #00e1ff;
+
+    text-transform: uppercase;
+
+    letter-spacing: 3px;
+
+    text-shadow:
+        0 0 25px rgba(0,225,255,0.25);
+
+}
+
+/* =========================
+   BADGES
+========================= */
+
+.export-mode .export-infos {
+
+    display: flex;
+
+    gap: 14px;
+
+    flex-wrap: wrap;
+
+}
+
+.export-mode .export-badge {
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(0,225,255,0.14),
+            rgba(0,120,255,0.08)
+        );
+
+    border:
+        1px solid rgba(0,225,255,0.14);
+
+    padding: 12px 18px;
+
+    border-radius: 14px;
+
+    color: #d9f6ff;
+
+    font-size: 13px;
+
+    box-shadow:
+        0 0 18px rgba(0,225,255,0.08);
+
+}
+
+/* =========================
+   TABLE
+========================= */
+
+.export-mode table {
+
+    width: 100%;
+
+    border-collapse: collapse;
+
+    overflow: hidden;
+
+    border-radius: 22px;
+
+}
+
+/* =========================
+   TABLE HEADER
+========================= */
+
+.export-mode th {
+
+    background:
+        linear-gradient(
+            90deg,
+            #13233a,
+            #1a3150
+        );
+
+    color: #00e1ff;
+
+    padding: 20px;
+
+    font-size: 15px;
+
+    letter-spacing: 1px;
+
+    text-transform: uppercase;
+
+}
+
+/* =========================
+   TABLE ROWS
+========================= */
+
+.export-mode td {
+
+    padding: 18px 20px;
+
+    color: #dbe8f8;
+
+    font-size: 15px;
+
+    border-bottom:
+        1px solid rgba(255,255,255,0.04);
+
+}
+
+.export-mode tbody tr:nth-child(even) {
+
+    background:
+        rgba(255,255,255,0.025);
+
+}
+
+.export-mode tbody tr:hover {
+
+    background:
+        rgba(0,225,255,0.05);
+
+}
+
+/* =========================
+   DRIVER COLORS
+========================= */
+
+.export-mode tbody td:nth-child(4) {
+
+    font-weight: bold;
+
+}
+
+.export-mode tbody tr:nth-child(4n+1) td:nth-child(4) {
+
+    color: #00e1ff;
+
+}
+
+.export-mode tbody tr:nth-child(4n+2) td:nth-child(4) {
+
+    color: #ffb347;
+
+}
+
+.export-mode tbody tr:nth-child(4n+3) td:nth-child(4) {
+
+    color: #69ffb2;
+
+}
+
+.export-mode tbody tr:nth-child(4n+4) td:nth-child(4) {
+
+    color: #ff6f91;
+
+}
+
+/* =========================
+   HOURS
+========================= */
+
+.export-mode td:nth-child(2),
+.export-mode td:nth-child(3) {
+
+    font-weight: bold;
+
+    color: #f3f8ff;
+
+}
+
+/* =========================
+   RELAY VISUALS
+========================= */
+
+.export-mode tbody tr:nth-child(2n) {
+
+    box-shadow:
+        inset 0 -1px 0 rgba(0,225,255,0.04);
+
+}
+
