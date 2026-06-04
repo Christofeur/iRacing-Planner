@@ -335,15 +335,70 @@ function isDriverUnavailable(
                 unavailable.end
             );
 
+        // =====================
+        // CAS NORMAL
+        // =====================
+
         if (
-
-            startDay < unavailableEnd &&
-
-            endDay > unavailableStart
-
+            unavailableStart <
+            unavailableEnd
         ) {
 
-            return true;
+            if (
+
+                startDay <
+                unavailableEnd &&
+
+                endDay >
+                unavailableStart
+
+            ) {
+
+                return true;
+
+            }
+
+        }
+
+        // =====================
+        // PASSE MINUIT
+        // Exemple :
+        // 15:00 -> 09:00
+        // =====================
+
+        else {
+
+            const blockedStart =
+                startDay >=
+                unavailableStart;
+
+            const blockedEnd =
+                startDay <
+                unavailableEnd;
+
+            const blockedStart2 =
+                endDay >
+                unavailableStart;
+
+            const blockedEnd2 =
+                endDay <=
+                unavailableEnd;
+
+            if (
+
+                blockedStart ||
+
+                blockedEnd ||
+
+                blockedStart2 ||
+
+                blockedEnd2
+
+            ) {
+
+                return true;
+
+            }
 
         }
 
@@ -352,6 +407,8 @@ function isDriverUnavailable(
     return false;
 
 }
+
+ 
 
 // =========================
 // GENERATE STRATEGY
@@ -812,27 +869,88 @@ function renderStrategy() {
 
     tbody.innerHTML = "";
 
-    strategy.forEach(stint => {
+    const drivers =
+        [...new Set(
+            strategy.map(
+                stint => stint.driver
+            )
+        )];
 
-        const row =
-            document.createElement("tr");
+    strategy.forEach(
+        (stint, index) => {
 
-        row.innerHTML = `
+            const row =
+                document.createElement(
+                    "tr"
+                );
 
-            <td>${stint.stint}</td>
-            <td>${stint.start}</td>
-            <td>${stint.end}</td>
-            <td>${stint.driver}</td>
-            <td>${stint.laps}</td>
+            const options =
+                drivers
+                    .map(driver => `
 
-        `;
+                        <option
+                            value="${driver}"
+                            ${driver === stint.driver ? "selected" : ""}>
 
-        tbody.appendChild(row);
+                            ${driver}
 
-    });
+                        </option>
+
+                    `)
+                    .join("");
+
+            row.innerHTML = `
+
+                <td>${stint.stint}</td>
+
+                <td>${stint.start}</td>
+
+                <td>${stint.end}</td>
+
+                <td>
+
+                    <select
+                        onchange="changeStintDriver(${index}, this.value)">
+
+                        ${options}
+
+                    </select>
+
+                </td>
+
+                <td>${stint.laps}</td>
+
+            `;
+
+            tbody.appendChild(
+                row
+            );
+
+        });
 
 }
 
+function changeStintDriver(
+    index,
+    newDriver
+) {
+
+    if (
+        !strategy[index]
+    ) {
+
+        return;
+
+    }
+
+    strategy[index].driver =
+        newDriver;
+
+    updateIncidentStints();
+
+    updateIRacingRule();
+
+}
 // =========================
 // INCIDENTS
 // =========================
