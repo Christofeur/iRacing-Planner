@@ -1171,9 +1171,21 @@ function applyIncident() {
         driverIndex = 0;
 
     let currentTime =
-        timeToSeconds(
-            restartTime
-        );
+    timeToSeconds(
+        restartTime
+    );
+
+// INCIDENT APRES MINUIT
+
+if (
+    currentTime <
+    raceStart
+) {
+
+    currentTime +=
+        86400;
+
+}
 
     let remainingTime =
         raceEnd - currentTime;
